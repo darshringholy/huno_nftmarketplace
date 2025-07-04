@@ -317,7 +317,8 @@ export default function DiscoverContent() {
                   collectionName: "Plato",
                   verified: true,
                   price: price,
-                  isPriceLoading: isPriceLoading
+                  isPriceLoading: isPriceLoading,
+                  liquidId: liquidId
                 }}
                 index={index}
               />

@@ -6,11 +6,18 @@ import Link from "next/link"
 import Image from "next/image"
 import NftCard from "../ui/nft-card"
 
+const fallbackNftImages = [
+  "https://hunosrent.com/images/upload/x_large_812cde03b32d22ea8ae243197c40da6f.jpeg",
+  "https://hunosrent.com/images/upload/x_large_3d70b92d9bc26ddc2f73458d22e10edb.jpeg",
+  "https://hunosrent.com/images/upload/x_large_7432ec080bddc7c1f782905c508d8ecc.jpeg",
+  "https://hunosrent.com/images/upload/x_large_ea2c13a17bba344bda66ed77821c0bfb.jpeg"
+]
+
 const auctions = [
-  { name: "Red car", price: "1.75 BUSD", timeLeft: "01:20:15", image: "/placeholder.svg?height=200&width=200" },
-  { name: "Anpaid", price: "1.75 BUSD", timeLeft: "01:20:15", image: "/placeholder.svg?height=200&width=200" },
-  { name: "Marvin", price: "1.75 BUSD", timeLeft: "01:20:15", image: "/placeholder.svg?height=200&width=200" },
-  { name: "Kalyptingo", price: "1.75 BUSD", timeLeft: "01:20:15", image: "/placeholder.svg?height=200&width=200" },
+  { name: "Red car", price: "1.75 BUSD", timeLeft: "01:20:15", image: fallbackNftImages[0] },
+  { name: "Anpaid", price: "1.75 BUSD", timeLeft: "01:20:15", image: fallbackNftImages[1] },
+  { name: "Marvin", price: "1.75 BUSD", timeLeft: "01:20:15", image: fallbackNftImages[2] },
+  { name: "Kalyptingo", price: "1.75 BUSD", timeLeft: "01:20:15", image: fallbackNftImages[3] },
 ]
 
 export default function HotAuctions() {

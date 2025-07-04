@@ -100,17 +100,22 @@ const activities: Activity[] = [
 
 interface ActivitiesTableProps {
   activityFilter: string
+  liquidId?: string
 }
 
-export default function ActivitiesTable({ activityFilter }: ActivitiesTableProps) {
+export default function ActivitiesTable({ activityFilter, liquidId }: ActivitiesTableProps) {
   const [filterModalOpen, setFilterModalOpen] = useState(false)
 
   const filteredActivities = activities.filter((activity) => {
-    if (activityFilter === "all") return true
-    if (activityFilter === "fixed-price") return activity.type === "sale"
-    if (activityFilter === "auction") return activity.type === "auction"
-    if (activityFilter === "with-buy-offer") return activity.type === "offer"
-    return true
+    let matchesType = true
+    if (activityFilter === "fixed-price") matchesType = activity.type === "sale"
+    else if (activityFilter === "auction") matchesType = activity.type === "auction"
+    else if (activityFilter === "with-buy-offer") matchesType = activity.type === "offer"
+    let matchesId = true
+    if (liquidId) {
+      matchesId = activity.item.name.includes(liquidId) || activity.item.collection.includes(liquidId)
+    }
+    return (activityFilter === "all" || matchesType) && matchesId
   })
 
   // Pagination state

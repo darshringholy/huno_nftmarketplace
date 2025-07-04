@@ -15,12 +15,19 @@ const partners = [
   { name: "Rooster Protocol", logo: "/images/rooster.svg", width: 100, height: 50 },
 ]
 
+const fallbackNftImages = [
+  "https://hunosrent.com/images/upload/x_large_812cde03b32d22ea8ae243197c40da6f.jpeg",
+  "https://hunosrent.com/images/upload/x_large_3d70b92d9bc26ddc2f73458d22e10edb.jpeg",
+  "https://hunosrent.com/images/upload/x_large_7432ec080bddc7c1f782905c508d8ecc.jpeg",
+  "https://hunosrent.com/images/upload/x_large_ea2c13a17bba344bda66ed77821c0bfb.jpeg"
+]
+
 const assets = Array.from({ length: 14 }, (_, i) => ({
   id: i + 1,
   name: "Gallardo LP 560-4",
   rarity: "20%",
   price: "372 PLUME",
-  image: "/placeholder.svg?height=60&width=60",
+  image: fallbackNftImages[i % fallbackNftImages.length],
 }))
 
 export default function MarketplaceSection() {
@@ -114,7 +121,7 @@ export default function MarketplaceSection() {
                   >
                     <div className="flex items-center space-x-3">
                       <span className="text-gray-400 text-sm">{asset.id}</span>
-                      <div className="w-10 h-10 bg-gray-700 rounded"></div>
+                      <img src={asset.image} alt={asset.name} className="w-10 h-10 rounded object-cover" />
                       <span className="text-sm text-gray-400">{asset.name}</span>
                     </div>
                     <span className="text-sm text-gray-400">{asset.rarity}</span>
@@ -138,7 +145,7 @@ export default function MarketplaceSection() {
                     >
                       <div className="flex items-center space-x-3">
                         <span className="text-gray-400 text-sm">{asset.id}</span>
-                        <div className="w-10 h-10 bg-gray-700 rounded"></div>
+                        <img src={asset.image} alt={asset.name} className="w-10 h-10 rounded object-cover" />
                         <span className="text-sm text-gray-400">{asset.name}</span>
                       </div>
                       <span className="text-sm text-gray-400">{asset.rarity}</span>
@@ -155,7 +162,7 @@ export default function MarketplaceSection() {
                 <div key={asset.id} className="bg-gray-800 rounded-lg p-4">
                   <div className="flex items-center space-x-3 mb-3">
                     <span className="text-gray-400 text-sm">#{asset.id}</span>
-                    <div className="w-12 h-12 bg-gray-700 rounded"></div>
+                    <img src={asset.image} alt={asset.name} className="w-12 h-12 rounded object-cover" />
                     <div className="flex-1">
                       <h3 className="text-sm font-semibold">{asset.name}</h3>
                       <p className="text-xs text-gray-400">Rarity: {asset.rarity}</p>

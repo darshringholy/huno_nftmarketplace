@@ -13,27 +13,27 @@ const wallets = [
   {
     id: "metamask",
     name: "Metamask",
-    icon: <img src="/images/metamask-logo.svg" alt="Metamask" className="w-12 h-12" draggable={false} />,
+    icon: <img src="/images/metamask.svg" alt="Metamask" className="w-12 h-12" draggable={false} />,
   },
   {
     id: "trust",
     name: "Trust Wallet",
-    icon: <img src="/images/trust-wallet-logo.svg" alt="Trust Wallet" className="w-12 h-12" draggable={false} />,
+    icon: <img src="/images/trustwallet.svg" alt="Trust Wallet" className="w-12 h-12" draggable={false} />,
   },
   {
     id: "walletconnect",
     name: "WalletConnect",
-    icon: <img src="/images/walletconnect-logo.svg" alt="WalletConnect" className="w-12 h-12" draggable={false} />,
+    icon: <img src="/images/walletconnect.svg" alt="WalletConnect" className="w-12 h-12" draggable={false} />,
   },
   {
     id: "coinbase",
     name: "Coinbase Wallet",
-    icon: <img src="/images/coinbase-logo.svg" alt="Coinbase Wallet" className="w-12 h-12" draggable={false} />,
+    icon: <img src="/images/coinbase.svg" alt="Coinbase Wallet" className="w-12 h-12" draggable={false} />,
   },
   {
     id: "okx",
     name: "OKX Wallet",
-    icon: <img src="/images/okx-logo.svg" alt="OKX Wallet" className="w-12 h-12" draggable={false} />,
+    icon: <img src="/images/okxwallet.svg" alt="OKX Wallet" className="w-12 h-12" draggable={false} />,
   },
 ]
 
