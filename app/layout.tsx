@@ -1,31 +1,26 @@
-"use client"
-import type React from "react"
-import { Inter } from "next/font/google"
-import "./globals.css"
-import Header from "@/components/layout/header"
-import Footer from "@/components/layout/footer"
-import { usePathname } from "next/navigation"
-import Web3Provider from "@/components/providers/web3-provider"
+export const metadata = {
+  title: "Hunos Marketplace",
+  icons: [
+    { rel: "icon", url: "/favicon.ico" },
+    // Uncomment below if you add these files:
+    // { rel: "icon", type: "image/png", url: "/favicon.png" },
+    // { rel: "icon", type: "image/svg+xml", url: "/favicon.svg" },
+  ],
+};
 
-const inter = Inter({ subsets: ["latin"] })
+import type { ReactNode } from "react";
+import { Inter } from "next/font/google";
+import "./globals.css";
+import ClientLayout from "./ClientLayout";
 
-export default function RootLayout({
-  children,
-}: {
-  children: React.ReactNode
-}) {
-  const pathname = usePathname()
-  const isMarketplace = pathname.startsWith("/marketplace")
+const inter = Inter({ subsets: ["latin"] });
 
+export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="en">
       <body className={`${inter.className} min-h-screen bg-black text-white`}>
-        <Web3Provider>
-          {!isMarketplace && <Header />}
-          <main className="flex-1">{children}</main>
-          {!isMarketplace && <Footer />}
-        </Web3Provider>
+        <ClientLayout>{children}</ClientLayout>
       </body>
     </html>
-  )
+  );
 }

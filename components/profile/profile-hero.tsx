@@ -65,7 +65,15 @@ export default function ProfileHero({ profile }: ProfileHeroProps) {
   return (
     <section className="relative">
       {/* Banner Image */}
-      <div className="h-80 bg-gradient-to-br from-gray-800 to-gray-900 relative overflow-hidden">
+      <div className="container mx-auto px-4 rounded-lg h-80 bg-gradient-to-br from-gray-800 to-gray-900 relative overflow-hidden">
+        {profile.bannerImage && (
+          <img
+            src={profile.bannerImage}
+            alt="Banner"
+            className="absolute inset-0 w-full h-full object-cover"
+            style={{ zIndex: 0 }}
+          />
+        )}
         <div className="absolute inset-0 bg-black/20"></div>
       </div>
 
@@ -73,8 +81,32 @@ export default function ProfileHero({ profile }: ProfileHeroProps) {
       <div className="container mx-auto px-4 relative">
         <div className="flex flex-col items-center text-center -mt-16 relative z-10">
           {/* Avatar */}
-          <div className="w-32 h-32 rounded-full bg-gray-800 border-4 border-black mb-6 flex items-center justify-center">
-            <div className="w-24 h-24 bg-gray-700 rounded-full"></div>
+          <div className="w-32 h-32 flex items-center justify-center mb-6">
+            <svg width="128" height="128" viewBox="0 0 80 80">
+              <polygon
+                points="40,5 74,22.5 74,57.5 40,75 6,57.5 6,22.5"
+                fill="#444"
+                stroke="#222"
+                strokeWidth="3"
+              />
+              {profile.avatarImage && (
+                <defs>
+                  <clipPath id="hexClipProfile">
+                    <polygon points="40,5 74,22.5 74,57.5 40,75 6,57.5 6,22.5" />
+                  </clipPath>
+                </defs>
+              )}
+              {profile.avatarImage ? (
+                <image
+                  href={profile.avatarImage}
+                  x="6" y="7"
+                  width="68"
+                  height="66"
+                  clipPath="url(#hexClipProfile)"
+                  preserveAspectRatio="xMidYMid slice"
+                />
+              ) : null}
+            </svg>
           </div>
 
           {/* Username */}

@@ -1,9 +1,7 @@
-import ProfileEditForm from "@/components/profile/profile-edit-form"
+import { useState } from "react";
+import ProfileEditForm from "@/components/profile/profile-edit-form";
 
 export default function ProfileEditPage() {
-  return (
-    <div className="container mx-auto px-4 py-8">
-      <ProfileEditForm />
-    </div>
-  )
+  // Optionally, you can manage state here if you want to lift the upload logic up
+  return <ProfileEditForm />;
 }

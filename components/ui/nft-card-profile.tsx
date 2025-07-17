@@ -14,21 +14,21 @@ interface NftCardProfileProps {
 export function NftCardProfile({ nft, index }: NftCardProfileProps) {
     return (
         <Card
-            className="bg-[#232423] border-none rounded-2xl overflow-hidden shadow-none flex flex-col h-full"
+            className="bg-[#232423] border-none rounded-lg overflow-hidden shadow-none flex flex-col h-full"
             key={index}
         >
             <CardContent className="p-0 flex flex-col h-full">
                 {/* Image area */}
-                <div className="aspect-square bg-[#2c2d2b] rounded-t-2xl flex items-center justify-center w-full">
+                <div className="aspect-square bg-[#2c2d2b] rounded-t-lg flex items-center justify-center w-full">
                     <img
                         src={nft.image}
                         alt={nft.name}
-                        className="object-cover w-full h-full rounded-t-2xl"
+                        className="object-cover w-full h-full rounded-t-lg"
                         style={{ background: "#232423" }}
                     />
                 </div>
                 {/* Bottom section */}
-                <div className="bg-black px-4 pt-3 pb-2 rounded-b-2xl">
+                <div className="bg-black px-4 pt-3 pb-2 rounded-b-lg">
                     <div className="flex items-center justify-between mb-1">
                         <div className="flex items-center space-x-2">
                             <span className="text-xs text-gray-400">{nft.collectionName || "Plato"}</span>

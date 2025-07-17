@@ -8,6 +8,10 @@ import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { ArrowLeft, Upload, Info } from "lucide-react"
+import { useWallet } from "@/hooks/use-wallet"
+import { useEffect } from "react"
+import { LIQUIDID_ABI, LIQUIDID_ADDRESS } from "@/lib/liquidid";
+import { ethers } from "ethers";
 
 interface CreateNFTFormProps {
   type: "single" | "multiple"
@@ -27,6 +31,7 @@ interface NFTFormData {
 }
 
 export default function CreateNFTForm({ type, onBack }: CreateNFTFormProps) {
+  const { address, isConnected } = useWallet();
   const [formData, setFormData] = useState<NFTFormData>({
     file: null,
     title: "",
@@ -37,6 +42,26 @@ export default function CreateNFTForm({ type, onBack }: CreateNFTFormProps) {
   })
 
   const [filePreview, setFilePreview] = useState<string | null>(null)
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [success, setSuccess] = useState<string | null>(null)
+  const [collections, setCollections] = useState<any[]>([])
+  const [collectionsLoading, setCollectionsLoading] = useState(false)
+  const [collectionsError, setCollectionsError] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (!address) return;
+    setCollectionsLoading(true);
+    setCollectionsError(null);
+    fetch(`/api/collections?walletAddress=${address}`)
+      .then(async (res) => {
+        if (!res.ok) throw new Error("Failed to fetch collections");
+        const { collections } = await res.json();
+        setCollections(collections || []);
+      })
+      .catch((err) => setCollectionsError(err.message))
+      .finally(() => setCollectionsLoading(false));
+  }, [address]);
 
   const handleInputChange = (field: keyof NFTFormData, value: string) => {
     setFormData((prev) => ({
@@ -82,9 +107,103 @@ export default function CreateNFTForm({ type, onBack }: CreateNFTFormProps) {
     }
   }
 
-  const handleSubmit = () => {
-    console.log("Creating NFT:", formData)
-    // Implement NFT creation logic
+  const uploadToIPFS = async (file: File) => {
+    const formData = new FormData()
+    formData.append("file", file)
+    
+    const response = await fetch("/api/ipfs/upload", {
+      method: "POST",
+      body: formData,
+    })
+    
+    if (!response.ok) {
+      const error = await response.json()
+      throw new Error(error.details || "Failed to upload file to IPFS")
+    }
+    
+    const result = await response.json()
+    return result.ipfsURI
+  }
+
+  const uploadMetadataToIPFS = async (imageURI: string) => {
+    const metadata = {
+      name: formData.title,
+      description: formData.description,
+      image: imageURI,
+      collection: formData.collection || "",
+      attributes: formData.properties
+        .filter(prop => prop.name && prop.value)
+        .map(prop => ({
+          trait_type: prop.name,
+          value: prop.value,
+        })),
+      external_url: "",
+      animation_url: "",
+    }
+
+    const metadataFormData = new FormData()
+    metadataFormData.append("metadata", JSON.stringify(metadata))
+    
+    const response = await fetch("/api/ipfs/upload", {
+      method: "POST",
+      body: metadataFormData,
+    })
+    
+    if (!response.ok) {
+      const error = await response.json()
+      throw new Error(error.details || "Failed to upload metadata to IPFS")
+    }
+    
+    const result = await response.json()
+    return result.ipfsURI
+  }
+
+  const handleSubmit = async () => {
+    if (!formData.file || !formData.title.trim()) {
+      setError("Please provide a file and title")
+      return
+    }
+
+    setLoading(true)
+    setError(null)
+    setSuccess(null)
+
+    try {
+      // Step 1: Upload file to IPFS
+      const imageURI = await uploadToIPFS(formData.file)
+      // Step 2: Upload metadata to IPFS
+      const metadataURI = await uploadMetadataToIPFS(imageURI)
+
+      // Step 3: Mint NFT on blockchain
+      if (!window.ethereum) throw new Error("Wallet not connected")
+      const provider = new ethers.BrowserProvider(window.ethereum as any)
+      const signer = await provider.getSigner()
+      const contract = new ethers.Contract(LIQUIDID_ADDRESS, LIQUIDID_ABI, signer)
+
+      // AssetType: 0 = single, 1 = multiple
+      const assetType = type === "single" ? 0 : 1
+      // Custom price and project token are fixed for now
+      const customPrice = BigInt(0);
+      const projectToken = "0x0000000000000000000000000000000000000000";
+
+      const tx = await contract.mintAsset(metadataURI, assetType, customPrice, projectToken)
+      await tx.wait()
+
+      setSuccess("NFT created and minted successfully! Image and metadata uploaded to IPFS.")
+      setFormData({
+        file: null,
+        title: "",
+        description: "",
+        royalties: "10",
+        properties: [{ name: "", value: "" }],
+        collection: "",
+      })
+      setFilePreview(null)
+    } catch (err: any) {
+      setError(err.message || "Failed to create NFT")
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (
@@ -94,7 +213,7 @@ export default function CreateNFTForm({ type, onBack }: CreateNFTFormProps) {
           <ArrowLeft className="w-4 h-4 mr-2" />
           Back
         </Button>
-        <h1 className="text-3xl font-bold">Create {type === "single" ? "Single" : "Multiple"} NFT</h1>
+        <h1 className="text-3xl font-bold">Create {type === "single" ? "Single" : "Multiple"} LID</h1>
       </div>
 
       <div className="grid md:grid-cols-2 gap-8">
@@ -102,7 +221,7 @@ export default function CreateNFTForm({ type, onBack }: CreateNFTFormProps) {
         <div>
           <h2 className="text-lg font-semibold mb-4">Upload file</h2>
           <div
-            className="border-2 border-dashed border-gray-600 rounded-lg p-8 text-center hover:border-gray-500 transition-colors min-h-[300px] flex items-center justify-center"
+            className="border-2 border-dashed border-gray-600 rounded-lg p-0 text-center hover:border-gray-500 transition-colors min-h-[300px] flex items-center justify-center"
             onClick={() => document.getElementById("nft-file-input")?.click()}
           >
             {filePreview ? (
@@ -225,24 +344,47 @@ export default function CreateNFTForm({ type, onBack }: CreateNFTFormProps) {
               <Info className="w-4 h-4 text-gray-400" />
             </div>
             <p className="text-sm text-gray-400">This is the collection where your item will appear</p>
-            <Select value={formData.collection} onValueChange={(value) => handleInputChange("collection", value)}>
-              <SelectTrigger className="bg-gray-800 border-gray-700 text-white">
-                <SelectValue placeholder="Select collection" />
-              </SelectTrigger>
-              <SelectContent className="bg-gray-800 border-gray-700 text-white">
-                <SelectItem value="abstract">Abstract</SelectItem>
-                <SelectItem value="genesis">Genesis Collection</SelectItem>
-                <SelectItem value="nature">Nature Collection</SelectItem>
-                <SelectItem value="tech">Tech Collection</SelectItem>
-              </SelectContent>
-            </Select>
+            {collectionsLoading ? (
+              <div className="text-gray-400 text-sm">Loading collections...</div>
+            ) : collectionsError ? (
+              <div className="text-red-500 text-sm">{collectionsError}</div>
+            ) : collections.length === 0 ? (
+              <div className="text-gray-400 text-sm">No collections found. <a href='/marketplace/collections/create' className='text-green-400 underline'>Create one</a>.</div>
+            ) : (
+              <Select value={formData.collection} onValueChange={(value) => handleInputChange("collection", value)}>
+                <SelectTrigger className="bg-gray-800 border-gray-700 text-white">
+                  <SelectValue placeholder="Select collection" />
+                </SelectTrigger>
+                <SelectContent className="bg-gray-800 border-gray-700 text-white">
+                  {collections.map((col) => (
+                    <SelectItem key={col._id} value={col._id}>{col.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
           </div>
 
           {/* Create Button */}
-          <div className="pt-6 flex justify-end">
-            <Button onClick={handleSubmit} className="bg-gray-700 hover:bg-gray-600 text-white font-semibold px-8 py-3">
-              Create NFT
-            </Button>
+          <div className="pt-6 flex flex-col space-y-4">
+            {error && (
+              <div className="bg-red-900/20 border border-red-500 text-red-400 px-4 py-3 rounded-lg">
+                {error}
+              </div>
+            )}
+            {success && (
+              <div className="bg-green-900/20 border border-green-500 text-green-400 px-4 py-3 rounded-lg">
+                {success}
+              </div>
+            )}
+            <div className="flex justify-end">
+              <Button 
+                onClick={handleSubmit} 
+                disabled={loading}
+                className="bg-gray-700 hover:bg-gray-600 text-white font-semibold px-8 py-3 disabled:opacity-50"
+              >
+                {loading ? "Creating..." : "Create NFT"}
+              </Button>
+            </div>
           </div>
         </div>
       </div>

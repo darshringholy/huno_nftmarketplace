@@ -57,12 +57,15 @@ const ethersConfig = defaultConfig({
 })
 
 // 5. Create a Web3Modal instance - Initialize it here
-createWeb3Modal({
-  ethersConfig,
-  chains: [mainnet, polygon, arbitrum, plume],
-  projectId,
-  enableAnalytics: true,
-  enableOnramp: true,
-})
+if (typeof window !== "undefined" && !(window as any).__WEB3_MODAL_INITIALIZED__) {
+  createWeb3Modal({
+    ethersConfig,
+    chains: [mainnet, polygon, arbitrum, plume],
+    projectId,
+    enableAnalytics: true,
+    enableOnramp: true,
+  });
+  (window as any).__WEB3_MODAL_INITIALIZED__ = true;
+}
 
 export { mainnet, polygon, arbitrum, plume }

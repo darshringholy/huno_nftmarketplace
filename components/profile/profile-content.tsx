@@ -4,6 +4,7 @@ import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent } from "@/components/ui/card"
+import CollectionCard from "@/components/marketplace/collection/collection-card"
 import { Filter, ChevronDown, Check, ExternalLink } from "lucide-react"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import Image from "next/image"
@@ -13,8 +14,9 @@ import { ethers } from "ethers"
 import { MARKETPLACE_ABI, MARKETPLACE_ADDRESS } from "@/lib/marketplace"
 import { useWallet } from "@/hooks/use-wallet"
 import { LIQUIDID_ABI, LIQUIDID_ADDRESS } from "@/lib/liquidid"
-import { useSearchParams } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import { NftCardProfile } from "@/components/ui/nft-card-profile"
+import { useCallback } from "react"
 
 interface Profile {
   address: string
@@ -37,7 +39,8 @@ interface Profile {
 }
 
 interface ProfileContentProps {
-  profile: Profile
+  profile: Profile;
+  defaultTab?: string;
 }
 
 const filterOptions = [
@@ -55,8 +58,13 @@ const userNFTs = [
   { name: "Kalyptingo", price: "1.75 BUSD", timeLeft: "01:20:15", image: "/placeholder.svg?height=200&width=200" },
 ]
 
-export default function ProfileContent({ profile }: ProfileContentProps) {
-  const [activeTab, setActiveTab] = useState("items")
+export default function ProfileContent({ profile, defaultTab }: ProfileContentProps) {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const [activeTab, setActiveTab] = useState(defaultTab || "items");
+  useEffect(() => {
+    if (defaultTab) setActiveTab(defaultTab);
+  }, [defaultTab]);
   const [filterBy, setFilterBy] = useState("all")
   const [userAssets, setUserAssets] = useState<any[]>([])
   const [liquidIds, setLiquidIds] = useState<string[]>([])
@@ -65,7 +73,7 @@ export default function ProfileContent({ profile }: ProfileContentProps) {
   const [error, setError] = useState<string | null>(null)
   const [hasMore, setHasMore] = useState(true)
   const PAGE_SIZE = 4
-  const { isConnected } = useWallet();
+  const { isConnected, address } = useWallet();
 
   const [onSaleTab, setOnSaleTab] = useState("buy-now")
   const [offersTab, setOffersTab] = useState("offered")
@@ -275,16 +283,6 @@ export default function ProfileContent({ profile }: ProfileContentProps) {
     },
   ]
 
-  const userCollections = [
-    {
-      name: "Surreal Post",
-      collectionName: "NFT-Bloc",
-      itemCount: 1,
-      verified: true,
-      image: "/placeholder.svg?height=300&width=300",
-    },
-  ]
-
   const userActivities = [
     {
       type: "Bid & Offer",
@@ -413,7 +411,12 @@ export default function ProfileContent({ profile }: ProfileContentProps) {
   const offerPageSize = 10
   const paginatedReceivedOffers = receivedOffers.slice((offerPage - 1) * offerPageSize, offerPage * offerPageSize)
 
-  const searchParams = useSearchParams();
+  const handleTabClick = (tab: string) => {
+    setActiveTab(tab);
+    const params = new URLSearchParams(searchParams.toString());
+    params.set("tab", tab);
+    router.replace(`?${params.toString()}`);
+  };
 
   // Switch to items tab if ?tab=items or #items is present
   useEffect(() => {
@@ -504,40 +507,130 @@ export default function ProfileContent({ profile }: ProfileContentProps) {
     }
   }
 
+  // State for user collections
+  const [userCollections, setUserCollections] = useState<any[]>([]);
+  const [collectionsLoading, setCollectionsLoading] = useState(false);
+  const [collectionsError, setCollectionsError] = useState<string | null>(null);
+
+  // Fetch collections when collections tab is active
+  useEffect(() => {
+    if (activeTab !== "collections" || !isConnected || !address) return;
+    setCollectionsLoading(true);
+    setCollectionsError(null);
+    fetch(`/api/collections?walletAddress=${address}`)
+      .then(async (res) => {
+        if (!res.ok) throw new Error("Failed to fetch collections");
+        const { collections } = await res.json();
+        setUserCollections(collections || []);
+      })
+      .catch((err) => setCollectionsError(err.message))
+      .finally(() => setCollectionsLoading(false));
+  }, [activeTab, isConnected, address]);
+
+  // Helper to resolve IPFS URI to gateway URL
+  const resolveIpfs = (uri: string) => {
+    if (!uri) return null;
+    if (uri.startsWith("ipfs://")) {
+      return `https://gateway.pinata.cloud/ipfs/${uri.replace("ipfs://", "")}`;
+    }
+    return uri;
+  };
+
+  // Fetch metadata for each asset and cache it
+  const [assetImages, setAssetImages] = useState<{ [liquidId: string]: string }>({});
+  const [assetCollectionIds, setAssetCollectionIds] = useState<{ [liquidId: string]: string }>({});
+  const [assetNames, setAssetNames] = useState<{ [liquidId: string]: string }>({});
+  const [collectionNames, setCollectionNames] = useState<{ [collectionId: string]: string }>({});
+  const fetchAssetImagesAndCollections = useCallback(async (assets: any[]) => {
+    const imgUpdates: { [liquidId: string]: string } = {};
+    const idUpdates: { [liquidId: string]: string } = {};
+    const nameUpdates: { [liquidId: string]: string } = {};
+    await Promise.all(assets.map(async (asset) => {
+      if (!asset || !asset.liquidId || !asset.metadataURI) return;
+      const url = resolveIpfs(asset.metadataURI);
+      if (!url) {
+        imgUpdates[asset.liquidId] = "/placeholder.svg?height=200&width=200";
+        idUpdates[asset.liquidId] = "";
+        nameUpdates[asset.liquidId] = "";
+        return;
+      }
+      try {
+        const res = await fetch(url);
+        if (!res.ok) return;
+        const meta = await res.json();
+        let img = meta.image;
+        if (img && img.startsWith("ipfs://")) img = resolveIpfs(img);
+        imgUpdates[asset.liquidId] = img || "/placeholder.svg?height=200&width=200";
+        idUpdates[asset.liquidId] = meta.collection || "";
+        nameUpdates[asset.liquidId] = meta.name || "";
+      } catch {
+        imgUpdates[asset.liquidId] = "/placeholder.svg?height=200&width=200";
+        idUpdates[asset.liquidId] = "";
+        nameUpdates[asset.liquidId] = "";
+      }
+    }));
+    setAssetImages(prev => ({ ...prev, ...imgUpdates }));
+    setAssetCollectionIds(prev => ({ ...prev, ...idUpdates }));
+    setAssetNames(prev => ({ ...prev, ...nameUpdates }));
+  }, []);
+
+  // Fetch collection names from API and cache them
+  const fetchCollectionName = useCallback(async (collectionId: string) => {
+    if (!collectionId || collectionNames[collectionId]) return;
+    try {
+      const res = await fetch(`/api/collections?id=${collectionId}`);
+      if (!res.ok) return;
+      const data = await res.json();
+      if (data && data.collection && data.collection.name) {
+        setCollectionNames(prev => ({ ...prev, [collectionId]: data.collection.name }));
+      }
+    } catch {}
+  }, [collectionNames]);
+
+  useEffect(() => {
+    if (userAssets.length > 0) fetchAssetImagesAndCollections(userAssets);
+  }, [userAssets, fetchAssetImagesAndCollections]);
+
+  // Fetch collection names for all collection IDs in assetCollectionIds
+  useEffect(() => {
+    const ids = Object.values(assetCollectionIds).filter(Boolean);
+    ids.forEach(id => fetchCollectionName(id));
+  }, [assetCollectionIds, fetchCollectionName]);
+
   return (
     <div className="py-8 space-y-8">
       {/* Navigation Tabs */}
       <div className="flex items-center justify-center space-x-8 border-b border-gray-800">
         <button
-          onClick={() => setActiveTab("on-sale")}
+          onClick={() => handleTabClick("on-sale")}
           className={`pb-4 px-2 transition-colors ${activeTab === "on-sale" ? "border-b-2 border-green-500 text-white" : "text-gray-400 hover:text-white"
             }`}
         >
           On Sale
         </button>
         <button
-          onClick={() => setActiveTab("items")}
+          onClick={() => handleTabClick("items")}
           className={`pb-4 px-2 transition-colors ${activeTab === "items" ? "border-b-2 border-green-500 text-white" : "text-gray-400 hover:text-white"
             }`}
         >
           Items
         </button>
         <button
-          onClick={() => setActiveTab("collections")}
+          onClick={() => handleTabClick("collections")}
           className={`pb-4 px-2 transition-colors ${activeTab === "collections" ? "border-b-2 border-green-500 text-white" : "text-gray-400 hover:text-white"
             }`}
         >
           Collections
         </button>
         <button
-          onClick={() => setActiveTab("offers")}
+          onClick={() => handleTabClick("offers")}
           className={`pb-4 px-2 transition-colors ${activeTab === "offers" ? "border-b-2 border-green-500 text-white" : "text-gray-400 hover:text-white"
             }`}
         >
           Offers
         </button>
         <button
-          onClick={() => setActiveTab("activities")}
+          onClick={() => handleTabClick("activities")}
           className={`pb-4 px-2 transition-colors ${activeTab === "activities" ? "border-b-2 border-green-500 text-white" : "text-gray-400 hover:text-white"
             }`}
         >
@@ -545,37 +638,48 @@ export default function ProfileContent({ profile }: ProfileContentProps) {
         </button>
       </div>
 
-      {/* Filters */}
-      <div className="flex items-center justify-end space-x-4">
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button
-              variant="outline"
-              className="bg-gray-800 border-gray-700 text-white hover:bg-gray-700 min-w-[150px] justify-between"
-            >
-              <span>{selectedOption?.label || "All"}</span>
-              <ChevronDown className="w-4 h-4" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent className="bg-gray-800 border-gray-700 text-white min-w-[150px]">
-            {filterOptions.map((option) => (
-              <DropdownMenuItem
-                key={option.value}
-                onClick={() => setFilterBy(option.value)}
-                className="hover:bg-gray-700 focus:bg-gray-700 cursor-pointer flex items-center justify-between"
+      {/* Filters for Items Tab Only */}
+      {activeTab === "items" && (
+        <div className="flex items-center justify-end space-x-4 mb-6">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="outline"
+                className="bg-gray-800 border-gray-700 text-white hover:bg-gray-700 min-w-[150px] justify-between"
               >
-                <span className={filterBy === option.value ? "text-green-400" : "text-white"}>{option.label}</span>
-                {filterBy === option.value && <Check className="w-4 h-4 text-green-400" />}
-              </DropdownMenuItem>
-            ))}
-          </DropdownMenuContent>
-        </DropdownMenu>
+                <span>{selectedOption?.label || "All"}</span>
+                <ChevronDown className="w-4 h-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent className="bg-gray-800 border-gray-700 text-white min-w-[150px]">
+              {filterOptions.map((option) => (
+                <DropdownMenuItem
+                  key={option.value}
+                  onClick={() => setFilterBy(option.value)}
+                  className="hover:bg-gray-700 focus:bg-gray-700 cursor-pointer flex items-center justify-between"
+                >
+                  <span className={filterBy === option.value ? "text-green-400" : "text-white"}>{option.label}</span>
+                  {filterBy === option.value && <Check className="w-4 h-4 text-green-400" />}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
 
-        <Button variant="outline" size="sm" className="border-gray-700">
-          <Filter className="w-4 h-4 mr-2" />
-          Filter
-        </Button>
-      </div>
+          <Button variant="outline" size="sm" className="border-gray-700">
+            <Filter className="w-4 h-4 mr-2" />
+            Filter
+          </Button>
+
+          <Button 
+            variant="outline" 
+            size="sm" 
+            className="border-gray-700 bg-green-600 hover:bg-green-700 text-white"
+            onClick={() => router.push('/marketplace/create-item')}
+          >
+            Create LID
+          </Button>
+        </div>
+      )}
 
       {activeTab === "on-sale" && (
         <div className="space-y-6">
@@ -683,7 +787,7 @@ export default function ProfileContent({ profile }: ProfileContentProps) {
                           </span>
                         )}
                         <span className="ml-auto flex items-center justify-center w-6 h-6 rounded-full bg-[#FF5C2A]">
-                          <Image src="/images/pusd.svg" alt="PUSD" width={100} height={100} className="w-6 h-6" />
+                          <Image src="/images/pUSD-token.svg" alt="PUSD" width={100} height={100} className="w-6 h-6" />
                         </span>
                       </div>
                       {/* NFT name */}
@@ -880,72 +984,73 @@ export default function ProfileContent({ profile }: ProfileContentProps) {
       {/* Collections Tab */}
       {activeTab === "collections" && (
         <div className="space-y-6">
-          {/* Collections Filter */}
-          <div className="flex items-center justify-end">
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button
-                  variant="outline"
-                  className="bg-gray-800 border-gray-700 text-white hover:bg-gray-700 min-w-[140px] justify-between"
-                >
-                  <span>All Networks</span>
-                  <ChevronDown className="w-4 h-4" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent className="bg-gray-800 border-gray-700 text-white min-w-[140px]">
-                <DropdownMenuItem className="hover:bg-gray-700 focus:bg-gray-700 cursor-pointer">
-                  All Networks
-                </DropdownMenuItem>
-                <DropdownMenuItem className="hover:bg-gray-700 focus:bg-gray-700 cursor-pointer">
-                  Ethereum
-                </DropdownMenuItem>
-                <DropdownMenuItem className="hover:bg-gray-700 focus:bg-gray-700 cursor-pointer">
-                  Polygon
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
-
-          {/* Collections Grid */}
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-            {userCollections.map((collection, index) => (
-              <Card
-                key={index}
-                className="bg-gray-900 border-gray-800 hover:border-green-500/50 transition-colors cursor-pointer group"
+          {/* Collections Actions and Filter */}
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
+            <div></div> {/* Left spacer for alignment */}
+            <div className="flex items-center gap-4">
+              <Button
+                className="bg-green-500 hover:bg-green-600 text-black font-semibold px-6 py-2"
+                onClick={() => router.push("/marketplace/collections/create")}
               >
-                <CardContent className="p-0">
-                  <div className="aspect-square bg-gradient-to-br from-gray-800 to-gray-900 rounded-t-lg flex items-center justify-center relative">
-                    {/* Hexagonal placeholder */}
-                    <div className="w-20 h-20 bg-gray-600 rounded-lg transform rotate-45"></div>
-                  </div>
-
-                  <div className="p-4 space-y-3">
-                    {/* Collection info */}
-                    <div className="flex items-center space-x-2">
-                      <span className="text-xs text-gray-400">{collection.collectionName}</span>
-                      {collection.verified && <div className="w-2 h-2 bg-green-500 rounded-full"></div>}
-                      <div className="ml-auto">
-                        <div className="w-4 h-4 bg-yellow-500 rounded flex items-center justify-center">
-                          <span className="text-xs">⚡</span>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Collection name */}
-                    <h3 className="font-bold text-lg">{collection.name}</h3>
-
-                    {/* Item count */}
-                    <div className="flex items-center space-x-2">
-                      <span className="text-sm font-semibold">{collection.itemCount}</span>
-                      <div className="w-4 h-4 bg-gray-600 rounded flex items-center justify-center">
-                        <span className="text-xs">📦</span>
-                      </div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
+                Create Collection
+              </Button>
+              <Button variant="outline" className="border-green-500 text-green-500 hover:bg-green-500 hover:text-black font-semibold px-6 py-2">
+                Import Collections
+              </Button>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className="bg-gray-800 border-gray-700 text-white hover:bg-gray-700 min-w-[150px] justify-between"
+                  >
+                    <span>Recently Make</span>
+                    <ChevronDown className="w-4 h-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent className="bg-gray-800 border-gray-700 text-white min-w-[150px]">
+                  <DropdownMenuItem className="hover:bg-gray-700 focus:bg-gray-700 cursor-pointer">Recently Make</DropdownMenuItem>
+                  <DropdownMenuItem className="hover:bg-gray-700 focus:bg-gray-700 cursor-pointer">Oldest First</DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
           </div>
+
+          {/* Loading and error states */}
+          {collectionsLoading && (
+            <div className="flex flex-col items-center justify-center py-16 text-gray-400">Loading collections...</div>
+          )}
+          {collectionsError && (
+            <div className="flex flex-col items-center justify-center py-16 text-red-500">{collectionsError}</div>
+          )}
+
+          {/* Collections Grid or Empty State */}
+          {!collectionsLoading && !collectionsError && userCollections.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-16">
+              <div className="w-16 h-16 flex items-center justify-center bg-gray-800 rounded-full mb-4">
+                <span className="text-3xl text-gray-500">🗑️</span>
+              </div>
+              <div className="text-gray-400 text-lg mb-2">No Collections Yet</div>
+              <div className="text-gray-500 mb-4">Create or import a collection to get started.</div>
+              <Button className="bg-green-500 hover:bg-green-600 text-black font-semibold px-6 py-2 mt-2">
+                Create Collection
+              </Button>
+            </div>
+          ) : (!collectionsLoading && !collectionsError && (
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+              {userCollections.map((collection, index) => (
+                <CollectionCard
+                  key={collection._id || index}
+                  id={collection._id}
+                  name={collection.name}
+                  bannerUrl={collection.bannerUrl}
+                  logoUrl={collection.logoUrl}
+                  blockchain={collection.blockchain}
+                  verified={collection.verified}
+                  description={collection.description}
+                />
+              ))}
+            </div>
+          ))}
         </div>
       )}
 
@@ -1015,22 +1120,29 @@ export default function ProfileContent({ profile }: ProfileContentProps) {
           {!loading && !error && userAssets.length === 0 && (
             <div className="col-span-full text-center">No assets found.</div>
           )}
-          {!loading && !error && userAssets.map((asset: any, index: number) => (
-            <NftCardProfile
-              key={index}
-              nft={{
-                name: `NFT #${asset.liquidId}`,
-                image: "/placeholder.svg?height=200&width=200",
-                collectionName: asset.projectToken || "Plato",
-                verified: true
-              }}
-              index={index}
-            />
-          ))}
+          {!loading && !error && userAssets.map((asset: any, index: number) => {
+            // Determine collection name: fetch from API using collection id from metadata
+            let collectionName = "Unknown Collection";
+            const collectionId = assetCollectionIds[asset.liquidId];
+            if (collectionId && collectionNames[collectionId]) {
+              collectionName = collectionNames[collectionId];
+            }
+            const nftName = assetNames[asset.liquidId] || `NFT #${asset.liquidId}`;
+            return (
+              <NftCardProfile
+                key={index}
+                nft={{
+                  name: nftName,
+                  image: assetImages[asset.liquidId] || "/placeholder.svg?height=200&width=200",
+                  collectionName,
+                  verified: true
+                }}
+                index={index}
+              />
+            );
+          })}
         </div>
       )}
-
-      {/* Load More Button */}
       {activeTab === "items" && (
         <div className="text-center mt-6">
           {hasMore ? (
@@ -1048,5 +1160,5 @@ export default function ProfileContent({ profile }: ProfileContentProps) {
         </div>
       )}
     </div>
-  )
+  );
 }

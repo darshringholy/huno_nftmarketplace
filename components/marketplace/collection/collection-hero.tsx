@@ -20,15 +20,47 @@ export default function CollectionHero({ collection }: CollectionHeroProps) {
     <section className="relative px-8 py-2">
       {/* Banner Image */}
       <div className="h-80 bg-[#232424] relative overflow-hidden">
-        <div className="absolute inset-0 bg-black/20"></div>
+        {collection.bannerImage ? (
+          <img 
+            src={collection.bannerImage} 
+            alt={collection.name} 
+            className="w-full h-full object-cover"
+          />
+        ) : (
+          <div className="absolute inset-0 bg-black/20"></div>
+        )}
       </div>
 
       {/* Collection Info */}
       <div className="container mx-auto px-4 relative">
         <div className="flex flex-col items-center text-center -mt-16 relative z-10">
-          {/* Avatar */}
-          <div className="w-32 h-32 rounded-full bg-gray-800 border-4 border-black mb-6 flex items-center justify-center">
-            <div className="w-24 h-24 bg-gray-700 rounded-full"></div>
+          {/* Avatar (replace with hexagon logo) */}
+          <div className="w-32 h-32 flex items-center justify-center mb-6">
+            <svg width="128" height="128" viewBox="0 0 80 80">
+              <polygon
+                points="40,5 74,22.5 74,57.5 40,75 6,57.5 6,22.5"
+                fill="#444"
+                stroke="#222"
+                strokeWidth="3"
+              />
+              {collection.avatarImage && (
+                <defs>
+                  <clipPath id="hexClipHero">
+                    <polygon points="40,5 74,22.5 74,57.5 40,75 6,57.5 6,22.5" />
+                  </clipPath>
+                </defs>
+              )}
+              {collection.avatarImage ? (
+                <image
+                  href={collection.avatarImage}
+                  x="6" y="7"
+                  width="68"
+                  height="66"
+                  clipPath="url(#hexClipHero)"
+                  preserveAspectRatio="xMidYMid slice"
+                />
+              ) : null}
+            </svg>
           </div>
 
           {/* Collection Name */}
@@ -40,49 +72,7 @@ export default function CollectionHero({ collection }: CollectionHeroProps) {
               </Badge>
             )}
           </div>
-          <div className="flex items-center justify-center md:justify-start space-x-4 my-2">
-            <a
-              href="https://t.me/"
-              target="_blank"
-              rel="noopener noreferrer"
-              aria-label="Telegram"
-              className="text-gray-400 hover:text-white transition-colors"
-            >
-              {/* Telegram icon */}
-              <Image src="/images/telegram.svg" alt="Telegram" width={24} height={24} className="w-6 h-6" />
-            </a>
-            <a
-              href="https://twitter.com/"
-              target="_blank"
-              rel="noopener noreferrer"
-              aria-label="Twitter"
-              className="text-gray-400 hover:text-white transition-colors"
-            >
-              {/* X (Twitter) icon */}
-              <Image src="/images/twitter.svg" alt="Telegram" width={24} height={24} className="w-6 h-6" />
-            </a>
-            <a
-              href="https://discord.com/"
-              target="_blank"
-              rel="noopener noreferrer"
-              aria-label="Discord"
-              className="text-gray-400 hover:text-white transition-colors"
-            >
-              {/* Discord icon */}
-              <Image src="/images/discord.svg" alt="Telegram" width={24} height={24} className="w-6 h-6" />
-            </a>
-            <a
-              href="https://earthweb.com/"
-              target="_blank"
-              rel="noopener noreferrer"
-              aria-label="Earth web"
-              className="text-gray-400 hover:text-white transition-colors"
-            >
-              {/* Earth Web icon */}
-              <Image src="/images/earth-web.svg" alt="Telegram" width={24} height={24} className="w-6 h-6" />
-            </a>
-          </div>
-
+          
 
           {/* Description */}
           <p className="text-gray-400 max-w-2xl leading-relaxed mb-8">{collection.description}</p>

@@ -10,7 +10,7 @@ export default function CreateNFTSelection({ onSelect }: CreateNFTSelectionProps
   return (
     <div className="max-w-4xl mx-auto space-y-8">
       <div>
-        <h1 className="text-3xl font-bold mb-4">Create NFT</h1>
+        <h1 className="text-3xl font-bold mb-4">Create LID</h1>
         <p className="text-gray-400">
           Choose "Single" if you want your collectible to be one of a kind or "Multiple" if you want to sell one
           collectible multiple times

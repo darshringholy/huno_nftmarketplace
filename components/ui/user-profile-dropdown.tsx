@@ -4,12 +4,38 @@ import { Button } from "@/components/ui/button"
 import { DropdownMenuContent } from "@/components/ui/dropdown-menu"
 import { LogOut, User, Layers, CreditCard } from "lucide-react"
 import { useWallet } from "@/hooks/use-wallet"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import Link from "next/link"
+import { ethers } from "ethers"
+
+const PUSD_TOKEN_ADDRESS = "0x1E0E030AbCb4f07de629DCCEa458a271e0E82624";
+const ERC20_ABI = [
+  "function balanceOf(address owner) view returns (uint256)",
+  "function decimals() view returns (uint8)"
+];
 
 export default function UserProfileDropdown() {
-  const { address, balance, chainId, formatAddress, disconnectWallet } = useWallet()
+  const { address, chainId, formatAddress, disconnectWallet } = useWallet()
   const [copied, setCopied] = useState(false)
+  const [pusdBalance, setPusdBalance] = useState<string>("0")
+
+  useEffect(() => {
+    async function fetchPusdBalance() {
+      if (!address || !window.ethereum) return;
+      try {
+        const provider = new ethers.BrowserProvider(window.ethereum);
+        const contract = new ethers.Contract(PUSD_TOKEN_ADDRESS, ERC20_ABI, provider);
+        const [rawBalance, decimals] = await Promise.all([
+          contract.balanceOf(address),
+          contract.decimals()
+        ]);
+        setPusdBalance(ethers.formatUnits(rawBalance, decimals));
+      } catch (err) {
+        setPusdBalance("0");
+      }
+    }
+    fetchPusdBalance();
+  }, [address, chainId]);
 
   const copyAddress = async () => {
     if (address) {
@@ -39,12 +65,10 @@ export default function UserProfileDropdown() {
         <div className="bg-gray-800 rounded-lg p-4">
           <div className="flex items-center justify-between mb-2">
             <div className="flex items-center space-x-2">
-              <div className="w-6 h-6 bg-orange-500 rounded-full flex items-center justify-center">
-                <span className="text-white text-xs font-bold">$</span>
-              </div>
+              <img src="/images/pUSD-token.svg" alt="PUSD" className="w-6 h-6 rounded-full" />
               <span className="text-white font-medium">PUSD</span>
             </div>
-            <span className="text-white font-semibold">10,2 PUSD</span>
+            <span className="text-white font-semibold">{pusdBalance} PUSD</span>
           </div>
           <Button className="w-full bg-green-500 hover:bg-green-600 text-black font-medium">
             <CreditCard className="w-4 h-4 mr-2" />
@@ -63,7 +87,7 @@ export default function UserProfileDropdown() {
           </Link>
 
           <Link
-            href="/profile/collection"
+            href="/profile?tab=collections"
             className="flex items-center space-x-3 p-2 hover:bg-gray-800 rounded-lg transition-colors"
           >
             <div className="w-5 h-5 flex items-center justify-center">

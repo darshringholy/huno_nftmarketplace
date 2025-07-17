@@ -2,16 +2,17 @@
 
 import type React from "react"
 
-import { useState } from "react"
+import { useState, useRef, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Card, CardContent } from "@/components/ui/card"
 import { Upload, X } from "lucide-react"
+import { useWallet } from "@/hooks/use-wallet";
 
 interface ProfileData {
   username: string
-  intro: string
+  bio: string
   avatar: File | null
   coverImage: File | null
   socialLinks: {
@@ -19,13 +20,16 @@ interface ProfileData {
     youtube: string
     instagram: string
     homepage: string
+    discord: string
+    website: string
   }
 }
 
 export default function ProfileEditForm() {
+  const { address, isConnected } = useWallet();
   const [profileData, setProfileData] = useState<ProfileData>({
     username: "",
-    intro: "",
+    bio: "",
     avatar: null,
     coverImage: null,
     socialLinks: {
@@ -33,11 +37,49 @@ export default function ProfileEditForm() {
       youtube: "",
       instagram: "",
       homepage: "",
+      discord: "",
+      website: "",
     },
   })
 
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null)
   const [coverPreview, setCoverPreview] = useState<string | null>(null)
+
+  const [uploading, setUploading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
+
+  // Add refs for file inputs
+  const avatarInputRef = useRef<HTMLInputElement>(null)
+  const coverInputRef = useRef<HTMLInputElement>(null)
+
+  useEffect(() => {
+    if (!address) return;
+    (async () => {
+      try {
+        const res = await fetch(`/api/profile?address=${address}`);
+        if (!res.ok) return;
+        const { profile } = await res.json();
+        setProfileData((prev) => ({
+          ...prev,
+          ...profile,
+          bio: profile.bio || profile.intro || "",
+          avatar: null, // Don't set File object
+          coverImage: null,
+          socialLinks: {
+            twitter: profile.socialLinks?.twitter || "",
+            youtube: profile.socialLinks?.youtube || "",
+            instagram: profile.socialLinks?.instagram || "",
+            homepage: profile.socialLinks?.homepage || profile.socialLinks?.website || "",
+            discord: profile.socialLinks?.discord || "",
+            website: profile.socialLinks?.website || profile.socialLinks?.homepage || "",
+          },
+        }));
+        if (profile.avatar) setAvatarPreview(profile.avatar);
+        if (profile.coverImage) setCoverPreview(profile.coverImage);
+      } catch {}
+    })();
+  }, [address]);
 
   const handleInputChange = (field: string, value: string) => {
     if (field.startsWith("socialLinks.")) {
@@ -100,15 +142,70 @@ export default function ProfileEditForm() {
     }))
     if (type === "avatar") {
       setAvatarPreview(null)
+      // Reset avatar file input value
+      if (avatarInputRef.current) {
+        avatarInputRef.current.value = ""
+      }
     } else {
       setCoverPreview(null)
+      // Reset cover image file input value
+      if (coverInputRef.current) {
+        coverInputRef.current.value = ""
+      }
     }
   }
 
-  const handleSave = () => {
-    console.log("Saving profile data:", profileData)
-    // Implement save functionality
-  }
+  const uploadImage = async (file: File) => {
+    const formData = new FormData();
+    formData.append("file", file);
+    const res = await fetch("/api/upload", {
+      method: "POST",
+      body: formData,
+    });
+    if (!res.ok) throw new Error("Failed to upload image");
+    const data = await res.json();
+    return data.url as string;
+  };
+
+  const handleSave = async () => {
+    setUploading(true);
+    setError(null);
+    setSuccess(null);
+    try {
+      if (!address) throw new Error("Wallet not connected");
+      let avatarUrl = avatarPreview;
+      let coverUrl = coverPreview;
+      if (profileData.avatar instanceof File) {
+        avatarUrl = await uploadImage(profileData.avatar);
+      }
+      if (profileData.coverImage instanceof File) {
+        coverUrl = await uploadImage(profileData.coverImage);
+      }
+      const saveData = {
+        ...profileData,
+        intro: undefined, // Remove intro if present
+        avatar: avatarUrl,
+        coverImage: coverUrl,
+        address,
+        socialLinks: {
+          ...profileData.socialLinks,
+          website: profileData.socialLinks.website || profileData.socialLinks.homepage,
+          homepage: profileData.socialLinks.homepage || profileData.socialLinks.website,
+        },
+      };
+      const res = await fetch("/api/profile", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(saveData),
+      });
+      if (!res.ok) throw new Error("Failed to save profile");
+      setSuccess("Profile saved successfully!");
+    } catch (err: any) {
+      setError(err.message || "Upload failed");
+    } finally {
+      setUploading(false);
+    }
+  };
 
   return (
     <div className="max-w-6xl mx-auto space-y-8">
@@ -165,6 +262,7 @@ export default function ProfileEditForm() {
                 )}
                 <input
                   id="avatar-input"
+                  ref={avatarInputRef}
                   type="file"
                   accept="image/jpeg,image/png"
                   className="hidden"
@@ -216,6 +314,7 @@ export default function ProfileEditForm() {
                 )}
                 <input
                   id="cover-input"
+                  ref={coverInputRef}
                   type="file"
                   accept="image/jpeg,image/png"
                   className="hidden"
@@ -251,11 +350,11 @@ export default function ProfileEditForm() {
                 </div>
 
                 <div className="space-y-2">
-                  <label className="text-sm text-gray-300">Intro</label>
+                  <label className="text-sm text-gray-300">Bio</label>
                   <Textarea
                     placeholder="Tell us about yourself..."
-                    value={profileData.intro}
-                    onChange={(e) => handleInputChange("intro", e.target.value)}
+                    value={profileData.bio}
+                    onChange={(e) => handleInputChange("bio", e.target.value)}
                     className="bg-gray-800 border-gray-700 text-white placeholder-gray-500 min-h-[120px] resize-none"
                   />
                 </div>
@@ -316,6 +415,24 @@ export default function ProfileEditForm() {
                       className="bg-gray-800 border-gray-700 text-white placeholder-gray-500"
                     />
                   </div>
+                  <div className="space-y-2">
+                    <label className="text-sm text-gray-300">Discord</label>
+                    <Input
+                      placeholder="https://discord.com/"
+                      value={profileData.socialLinks.discord}
+                      onChange={(e) => handleInputChange("socialLinks.discord", e.target.value)}
+                      className="bg-gray-800 border-gray-700 text-white placeholder-gray-500"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-sm text-gray-300">Website</label>
+                    <Input
+                      placeholder="https://"
+                      value={profileData.socialLinks.website}
+                      onChange={(e) => handleInputChange("socialLinks.website", e.target.value)}
+                      className="bg-gray-800 border-gray-700 text-white placeholder-gray-500"
+                    />
+                  </div>
                 </div>
               </div>
             </CardContent>
@@ -323,9 +440,11 @@ export default function ProfileEditForm() {
 
           {/* Save Button */}
           <div className="flex justify-end">
-            <Button onClick={handleSave} className="bg-green-500 hover:bg-green-600 text-black font-semibold px-8 py-2">
-              Save
+            <Button onClick={handleSave} className="bg-green-500 hover:bg-green-600 text-black font-semibold px-8 py-2" disabled={uploading}>
+              {uploading ? "Saving..." : "Save"}
             </Button>
+            {error && <div className="text-red-500 mt-2">{error}</div>}
+            {success && <div className="text-green-500 mt-2">{success}</div>}
           </div>
         </div>
       </div>

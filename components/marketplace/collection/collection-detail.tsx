@@ -1,151 +1,81 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
+import { useParams } from "next/navigation"
 import { Check } from "lucide-react"
 
-// Mockup data for all tabs
-const mockAttributes = [
-  { label: "Staking score", value: "255" },
-  { label: "Type", value: "Rocket", percent: "11.7%" },
-  { label: "Color", value: "Special Edition Car", percent: "11.7%" },
-  { label: "Background", value: "Red", percent: "11.7%" },
-  { label: "Opening network", value: "Plume", percent: "11.7%" },
-  { label: "Special", value: "Yes", percent: "11.7%" },
-];
-
-const mockOffers = [
-  {
-    user: "Cimmy",
-    value: "0.83",
-    currency: "PUSD",
-    usd: "$ 366.86",
-    status: "Lead",
-    statusColor: "text-green-400",
-    time: "5 minutes ago",
-  },
-  {
-    user: "TheElerKing",
-    value: "0.935",
-    currency: "PUSD",
-    usd: "$ 349.18",
-    status: "Outbid",
-    statusColor: "text-red-500",
-    time: "1 hours ago",
-  },
-  {
-    user: "0xgj32...e121",
-    value: "0.85",
-    currency: "PUSD",
-    usd: "$ 331.52",
-    status: "Outbid",
-    statusColor: "text-red-500",
-    time: "4 hours ago",
-  },
-  {
-    user: "TheElerKing",
-    value: "0.77",
-    currency: "PUSD",
-    usd: "$ 318.24",
-    status: "Outbid",
-    statusColor: "text-red-500",
-    time: "5 hours ago",
-  },
-];
-
-const mockBids = [
-  {
-    user: "Cimmy",
-    value: "0.83",
-    currency: "PUSD",
-    usd: "$ 366.86",
-    status: "Lead",
-    statusColor: "text-green-400",
-    time: "5 minutes ago",
-  },
-  {
-    user: "TheElerKing",
-    value: "0.935",
-    currency: "PUSD",
-    usd: "$ 349.18",
-    status: "Outbid",
-    statusColor: "text-red-500",
-    time: "1 hours ago",
-  },
-  {
-    user: "0xgj32...e121",
-    value: "0.85",
-    currency: "PUSD",
-    usd: "$ 331.52",
-    status: "Outbid",
-    statusColor: "text-red-500",
-    time: "4 hours ago",
-  },
-  {
-    user: "TheElerKing",
-    value: "0.77",
-    currency: "PUSD",
-    usd: "$ 318.24",
-    status: "Outbid",
-    statusColor: "text-red-500",
-    time: "5 hours ago",
-  },
-];
-
-const mockInfo = [
-  { label: "Contract", value: "0x85F0...9E2D ↗", isLink: true },
-  { label: "Token ID", value: "1000287613 ↗", isLink: true },
-  { label: "Token Standard", value: "ERC-1155" },
-  { label: "Blockchain", value: "Plume" },
-  { label: "Metadata", value: "Centralized ↗", isLink: true },
-];
-
-const collections = [
-  {
-    id: "doodle-apes",
-    name: "Doodle Apes",
-    description:
-      "Doodle Apes are beautifully animated digital collectibles with varying identities. Each Doodle Ape is unique and has a truly unique set of traits and characteristics that DOODLE holders.",
-    verified: true,
-    bannerImage: "/placeholder.svg?height=200&width=400",
-    avatarImage: "/placeholder.svg?height=80&width=80",
-    stats: {
-      items: "65,307",
-      owners: "11,923",
-      volume: "26,328",
-      floorPrice: "5.06K",
-    },
-    sampleItems: [
-      { name: "Car-free City", price: "0.75 BUSD" },
-      { name: "White car", price: "0.75 BUSD" },
-      { name: "Green car", price: "0.75 BUSD" },
-      { name: "Gold car", price: "0.75 BUSD" },
-    ],
-  },
-  // Add more collections here...
-]
-
 export default function CollectionDetail() {
+  const { id } = useParams();
+  const [collection, setCollection] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState("Info");
 
-  // For demonstration, use the first collection
-  const collection = collections[0];
+  useEffect(() => {
+    if (!id) return;
+    setLoading(true);
+    setError(null);
+    fetch(`/api/collections?id=${id}`)
+      .then(async (res) => {
+        if (!res.ok) throw new Error("Collection not found");
+        const { collection } = await res.json();
+        setCollection(collection);
+      })
+      .catch((err) => setError(err.message))
+      .finally(() => setLoading(false));
+  }, [id]);
+
+  if (loading) return <div className="py-12 text-center text-gray-400">Loading collection...</div>;
+  if (error) return <div className="py-12 text-center text-red-500">{error}</div>;
+  if (!collection) return <div className="py-12 text-center text-gray-400">Collection not found.</div>;
 
   return (
     <div className="flex justify-between items-start py-12">
       {/* Left: Image Placeholder */}
       <div className="mr-12 flex flex-col items-center">
-        {/* Image Placeholder */}
-        <div className="w-[420px] h-[420px] bg-[#232424] rounded-xl flex items-center justify-center mb-8">
-          {/* Replace with actual image if available */}
-          <div className="w-full h-full bg-[#232424] rounded-xl" />
+        {/* Banner Image */}
+        <div className="w-[420px] h-[240px] bg-[#232424] rounded-xl flex items-center justify-center mb-8 overflow-hidden">
+          {collection.bannerUrl ? (
+            <img src={collection.bannerUrl} alt={collection.name} className="w-full h-full object-cover" />
+          ) : (
+            <div className="w-full h-full bg-[#232424] rounded-xl" />
+          )}
         </div>
-        {/* Price Card */}
-        <div className="w-[480px] bg-[#181818] rounded-xl p-6 flex flex-col space-y-6 shadow-lg">
+        {/* Logo Hexagon */}
+        <div className="-mt-16 mb-8">
+          <svg width="80" height="80" viewBox="0 0 80 80">
+            <polygon
+              points="40,5 74,22.5 74,57.5 40,75 6,57.5 6,22.5"
+              fill="#444"
+              stroke="#222"
+              strokeWidth="3"
+            />
+            {collection.logoUrl && (
+              <defs>
+                <clipPath id="hexClipDetail">
+                  <polygon points="40,5 74,22.5 74,57.5 40,75 6,57.5 6,22.5" />
+                </clipPath>
+              </defs>
+            )}
+            {collection.logoUrl ? (
+              <image
+                href={collection.logoUrl}
+                x="6" y="7"
+                width="68"
+                height="66"
+                clipPath="url(#hexClipDetail)"
+                preserveAspectRatio="xMidYMid slice"
+              />
+            ) : null}
+          </svg>
+        </div>
+        {/* Price Card (placeholder) */}
+        <div className="w-[420px] bg-[#181818] rounded-xl p-6 flex flex-col space-y-6 shadow-lg">
           <div className="flex justify-between items-start">
             <div>
               <div className="text-xs text-gray-400 mb-1">Price</div>
-              <div className="text-2xl font-bold text-white leading-tight">0.75 PUSD</div>
-              <div className="text-sm text-gray-500 mt-1">$327.54</div>
+              <div className="text-2xl font-bold text-white leading-tight">-</div>
+              <div className="text-sm text-gray-500 mt-1">-</div>
             </div>
             <div className="flex flex-col items-end">
               <div className="flex flex-row items-center space-x-2">
@@ -167,7 +97,7 @@ export default function CollectionDetail() {
         {/* Collection Name and Owner */}
         <div className="flex items-center justify-between mb-2">
           <div>
-            <h1 className="text-3xl font-bold text-white mb-1">Giraffe #110</h1>
+            <h1 className="text-3xl font-bold text-white mb-1">{collection.name}</h1>
             <div className="flex items-center space-x-12">
               {/* Collection */}
               <div className="flex items-center space-x-2">
@@ -186,17 +116,17 @@ export default function CollectionDetail() {
                   </span>
                 </div>
               </div>
-              {/* Owner */}
+              {/* Owner (placeholder) */}
               <div className="flex items-center space-x-2">
                 <div className="w-8 h-8 bg-[#232424] rounded-full flex items-center justify-center">
                   {/* Placeholder for owner icon */}
                 </div>
                 <div>
                   <span className="block text-xs text-gray-400">Owner</span>
-                  <span className="text-white font-semibold">0xhg34...nGj2</span>
+                  <span className="text-white font-semibold">-</span>
                 </div>
               </div>
-              {/* Total */}
+              {/* Total (placeholder) */}
               <div className="flex items-center space-x-2">
                 <div className="w-8 h-8 bg-[#232424] rounded-full flex items-center justify-center">
                   {/* Placeholder for total icon */}
@@ -205,14 +135,14 @@ export default function CollectionDetail() {
                     <rect x="7" y="8" width="6" height="4" rx="1" stroke="currentColor" strokeWidth="1.5" />
                   </svg>
                 </div>
-                <span className="text-xs text-gray-400">1000 Total</span>
+                <span className="text-xs text-gray-400">-</span>
               </div>
             </div>
           </div>
         </div>
         {/* Description */}
         <p className="text-gray-400 text-sm mb-4">
-          Breathing Space joyfully brings the unique blend of DeFi, Collect-to-Earn and Play-to-Earn Abstract is known for to the Neo N3 ecosystem...
+          {collection.description}
         </p>
 
         {/* Tabs */}
@@ -227,100 +157,10 @@ export default function CollectionDetail() {
             </button>
           ))}
         </div>
-        {/* Attributes Tab */}
-        {activeTab === "Attributes" && (
-          <div className="bg-[#181818] rounded-lg p-6 text-white space-y-4">
-            {mockAttributes.map((attr) => (
-              <div className="flex justify-between items-center" key={attr.label}>
-                <span className="text-gray-400">{attr.label}</span>
-                <span>
-                  <span className="text-white">{attr.value}</span>
-                  {attr.percent && (
-                    <span className="ml-2 text-xs text-gray-400">({attr.percent})</span>
-                  )}
-                </span>
-              </div>
-            ))}
-            <div className="mt-4 text-xs text-gray-400">
-              You can <span className="text-green-400 font-bold cursor-pointer">Report any problem</span> you find.
-            </div>
-          </div>
-        )}
-
-        {/* Offers Tab */}
-        {activeTab === "Offers" && (
-          <div className="bg-[#181818] rounded-lg p-6 text-white space-y-4">
-            <div className="space-y-6">
-              {mockOffers.map((offer, idx) => (
-                <div className="flex items-center justify-between" key={idx}>
-                  <div className="flex items-center space-x-3">
-                    <div className="w-8 h-8 rounded-full bg-[#232423]" />
-                    <div>
-                      <div className="text-sm font-semibold">{offer.user}</div>
-                      <div className="text-base font-bold">
-                        {offer.value} <span className="text-gray-400 font-normal">{offer.currency}</span>{" "}
-                        <span className="text-xs text-gray-400">({offer.usd})</span>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="flex flex-col items-end">
-                    <span className={`${offer.statusColor} font-semibold`}>
-                      {offer.status} <span className="inline-block align-middle">↗</span>
-                    </span>
-                    <span className="text-xs text-gray-400 mt-1">{offer.time}</span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Bids Tab */}
-        {activeTab === "Bids" && (
-          <div className="bg-[#181818] rounded-lg p-6 text-white space-y-4">
-            <div className="space-y-6">
-              {mockBids.map((bid, idx) => (
-                <div className="flex items-center justify-between" key={idx}>
-                  <div className="flex items-center space-x-3">
-                    <div className="w-8 h-8 rounded-full bg-[#232423]" />
-                    <div>
-                      <div className="text-sm font-semibold">{bid.user}</div>
-                      <div className="text-base font-bold">
-                        {bid.value} <span className="text-gray-400 font-normal">{bid.currency}</span>{" "}
-                        <span className="text-xs text-gray-400">({bid.usd})</span>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="flex flex-col items-end">
-                    <span className={`${bid.statusColor} font-semibold`}>
-                      {bid.status} <span className="inline-block align-middle">↗</span>
-                    </span>
-                    <span className="text-xs text-gray-400 mt-1">{bid.time}</span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Info Tab */}
-        {activeTab === "Info" && (
-          <div className="bg-[#181818] rounded-lg p-6 text-white space-y-4">
-            {mockInfo.map((info) => (
-              <div className="flex justify-between" key={info.label}>
-                <span className="text-gray-400">{info.label}</span>
-                {info.isLink ? (
-                  <span className="text-green-400 cursor-pointer">{info.value}</span>
-                ) : (
-                  <span>{info.value}</span>
-                )}
-              </div>
-            ))}
-            <div className="mt-4 text-xs text-gray-400">
-              You can <span className="text-green-400 font-bold cursor-pointer">Report any problem</span> you find.
-            </div>
-          </div>
-        )}
+        {/* Tab content placeholder */}
+        <div className="bg-[#181818] rounded-lg p-6 text-white space-y-4">
+          <div className="text-gray-400">Tab content coming soon...</div>
+        </div>
       </div>
     </div>
   );

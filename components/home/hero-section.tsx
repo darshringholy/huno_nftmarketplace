@@ -1,7 +1,14 @@
+"use client";
+
 import { Button } from "@/components/ui/button"
 import Image from "next/image"
+import Link from "next/link"
+import { useWallet } from "@/hooks/use-wallet"
+import { useWeb3Modal } from "@web3modal/ethers/react"
 
 export default function HeroSection() {
+  const { isConnected } = useWallet();
+  const { open } = useWeb3Modal();
   return (
     <section className="relative py-12 md:py-20 px-4 md:px-24 overflow-hidden">
       <div className="container mx-auto">
@@ -45,12 +52,19 @@ export default function HeroSection() {
             </div>
 
             <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
-              <Button className="bg-green-500 hover:bg-green-600 text-black font-semibold px-6 md:px-8 py-3">
-                Explore Marketplace
-              </Button>
-              <Button className="bg-green-500 hover:bg-green-600 text-black font-semibold">
-                Connect wallet
-              </Button>
+              <Link href="/marketplace">
+                <Button className="bg-green-500 hover:bg-green-600 text-black font-semibold px-6 md:px-8 py-3">
+                  Explore Marketplace
+                </Button>
+              </Link>
+              {!isConnected && (
+                <Button
+                  className="bg-green-500 hover:bg-green-600 text-black font-semibold"
+                  onClick={() => open()}
+                >
+                  Connect wallet
+                </Button>
+              )}
             </div>
           </div>
 

@@ -111,9 +111,6 @@ export default function MarketplaceHeader() {
 
           {/* Right Side Actions */}
           <div className="hidden md:flex items-center space-x-4">
-            {/* UK Flag */}
-            <img src="/images/uk-flag.svg" alt="Plume" className="w-8 h-8" draggable={false} />
-
             {/* Notification Bell */}
             <Button variant="ghost" size="sm" className="text-gray-400 hover:text-white p-2">
               <Bell className="w-5 h-5" />
