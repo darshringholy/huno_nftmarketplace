@@ -37,7 +37,7 @@ export default function CollectionVerificationForm() {
     bannerImage: null,
     collectionName: "",
     contractAddress: "",
-    blockchain: "bnb",
+    blockchain: "plume",
     website: "",
     twitterLink: "",
     twitterFollowers: "",
@@ -123,13 +123,13 @@ export default function CollectionVerificationForm() {
         <div className="lg:col-span-1">
           <h1 className="text-3xl font-bold mb-4">Apply for Collection Verification</h1>
           <div className="space-y-4 text-gray-400">
-            <p>NFT collection as NFT-Bloc Partners enjoys benefits like:</p>
+            <p>LID collection as LID Partners enjoys benefits like:</p>
             <ul className="space-y-1">
               <li>• Verified Mark</li>
               <li>• Attribute Filter</li>
             </ul>
             <p>
-              For NFTs with non-standard metadata, we also provide manual support for converting them to displayable
+              For LIDs with non-standard metadata, we also provide manual support for converting them to displayable
               format.
             </p>
             <p>Fill in the form and we will contact you later.</p>
@@ -265,7 +265,7 @@ export default function CollectionVerificationForm() {
 
               <div className="space-y-2">
                 <label className="text-sm text-gray-300">
-                  Contract address of the NFT <span className="text-red-500">*</span>
+                  Contract address of its LID <span className="text-red-500">*</span>
                 </label>
                 <Input
                   value={formData.contractAddress}
@@ -292,10 +292,7 @@ export default function CollectionVerificationForm() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent className="bg-transparent border-gray-700 text-white">
-                    <SelectItem value="bnb">BNB Chain</SelectItem>
-                    <SelectItem value="ethereum">Ethereum</SelectItem>
-                    <SelectItem value="polygon">Polygon</SelectItem>
-                    <SelectItem value="arbitrum">Arbitrum</SelectItem>
+                    <SelectItem value="plume">Plume</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -410,12 +407,12 @@ export default function CollectionVerificationForm() {
             </div>
           </div>
 
-          {/* NFT's metadata */}
+          {/* LID's metadata */}
           <div className="space-y-4">
-            <h2 className="text-xl text-white font-semibold">NFT's metadata</h2>
+            <h2 className="text-xl text-white font-semibold">LID's metadata</h2>
             <div className="space-y-2">
               <label className="text-sm text-gray-300">
-                Is your NFT's metadata json accessible from tokenURI contract method?
+                Is your LID's metadata json accessible from tokenURI contract method?
               </label>
               <Select value={formData.nftMetadata} onValueChange={(value) => handleInputChange("nftMetadata", value)}>
                 <SelectTrigger className="bg-black border-gray-700 text-white max-w-md">

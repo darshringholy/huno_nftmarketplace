@@ -1,10 +1,13 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Card, CardContent } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Switch } from "@/components/ui/switch"
-import { Heart, Tag, ShoppingCart, Gavel, TrendingUp, Clock, DollarSign, Users, Send } from "lucide-react"
+import { Heart, Tag, ShoppingCart, Gavel, TrendingUp, Clock, DollarSign, Users, Send, Bell } from "lucide-react"
+import { useWallet } from "@/hooks/use-wallet"
+import { useToast } from "@/hooks/use-toast"
 
 interface NotificationSettings {
   currency: string
@@ -80,6 +83,10 @@ const eventTypeOptions = [
 ]
 
 export default function SettingsForm() {
+  const { address, isConnected } = useWallet()
+  const { toast } = useToast()
+  const [loading, setLoading] = useState(false)
+  const [saving, setSaving] = useState(false)
   const [settings, setSettings] = useState<NotificationSettings>({
     currency: "usd",
     telegram: true,
@@ -96,33 +103,210 @@ export default function SettingsForm() {
     },
   })
 
-  const handleCurrencyChange = (value: string) => {
-    setSettings((prev) => ({
-      ...prev,
+  // Load settings from database
+  useEffect(() => {
+    const loadSettings = async () => {
+      if (!isConnected || !address) return
+      
+      try {
+        setLoading(true)
+        const response = await fetch(`/api/settings?userId=${address}`)
+        const data = await response.json()
+        
+        if (data.settings) {
+          setSettings({
+            currency: data.settings.currency || "usd",
+            telegram: data.settings.telegram !== undefined ? data.settings.telegram : true,
+            eventTypes: {
+              likedItemActivity: data.settings.eventTypes?.likedItemActivity !== undefined ? data.settings.eventTypes.likedItemActivity : true,
+              listingActivity: data.settings.eventTypes?.listingActivity !== undefined ? data.settings.eventTypes.listingActivity : true,
+              itemSold: data.settings.eventTypes?.itemSold !== undefined ? data.settings.eventTypes.itemSold : true,
+              bidActivity: data.settings.eventTypes?.bidActivity !== undefined ? data.settings.eventTypes.bidActivity : true,
+              outbid: data.settings.eventTypes?.outbid !== undefined ? data.settings.eventTypes.outbid : true,
+              auctionExpiration: data.settings.eventTypes?.auctionExpiration !== undefined ? data.settings.eventTypes.auctionExpiration : true,
+              buyOfferReceived: data.settings.eventTypes?.buyOfferReceived !== undefined ? data.settings.eventTypes.buyOfferReceived : true,
+              myBuyOfferActivity: data.settings.eventTypes?.myBuyOfferActivity !== undefined ? data.settings.eventTypes.myBuyOfferActivity : true,
+              itemTransfer: data.settings.eventTypes?.itemTransfer !== undefined ? data.settings.eventTypes.itemTransfer : true,
+            },
+          })
+        }
+      } catch (error) {
+        console.error("Error loading settings:", error)
+        toast({
+          title: "Error",
+          description: "Failed to load settings",
+          variant: "destructive",
+        })
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    loadSettings()
+  }, [isConnected, address, toast])
+
+  // Save settings to database
+  const saveSettings = async (newSettings: NotificationSettings) => {
+    if (!isConnected || !address) {
+      toast({
+        title: "Error",
+        description: "Please connect your wallet to save settings",
+        variant: "destructive",
+      })
+      return
+    }
+
+    try {
+      setSaving(true)
+      const response = await fetch("/api/settings", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          userId: address,
+          settings: newSettings,
+        }),
+      })
+
+      const data = await response.json()
+
+      if (data.success) {
+        toast({
+          title: "Success",
+          description: "Settings saved successfully",
+        })
+      } else {
+        throw new Error(data.error || "Failed to save settings")
+      }
+    } catch (error) {
+      console.error("Error saving settings:", error)
+      toast({
+        title: "Error",
+        description: "Failed to save settings",
+        variant: "destructive",
+      })
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const handleCurrencyChange = async (value: string) => {
+    const newSettings = {
+      ...settings,
       currency: value,
-    }))
+    }
+    setSettings(newSettings)
+    await saveSettings(newSettings)
   }
 
-  const handleTelegramToggle = (checked: boolean) => {
-    setSettings((prev) => ({
-      ...prev,
+  const handleTelegramToggle = async (checked: boolean) => {
+    const newSettings = {
+      ...settings,
       telegram: checked,
-    }))
+    }
+    setSettings(newSettings)
+    await saveSettings(newSettings)
   }
 
-  const handleEventTypeToggle = (eventType: keyof NotificationSettings["eventTypes"], checked: boolean) => {
-    setSettings((prev) => ({
-      ...prev,
+  const handleEventTypeToggle = async (eventType: keyof NotificationSettings["eventTypes"], checked: boolean) => {
+    const newSettings = {
+      ...settings,
       eventTypes: {
-        ...prev.eventTypes,
+        ...settings.eventTypes,
         [eventType]: checked,
       },
-    }))
+    }
+    setSettings(newSettings)
+    await saveSettings(newSettings)
+  }
+
+  // Demo notification function
+  const sendDemoNotification = async (type: string) => {
+    if (!isConnected || !address) {
+      toast({
+        title: "Error",
+        description: "Please connect your wallet to test notifications",
+        variant: "destructive",
+      })
+      return
+    }
+
+    try {
+      const response = await fetch("/api/notifications/demo", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          userId: address,
+          type,
+        }),
+      })
+
+      const data = await response.json()
+
+      if (data.success) {
+        toast({
+          title: "Success",
+          description: `Demo notification sent! Check the bell icon in the header.`,
+        })
+      } else {
+        throw new Error(data.error || "Failed to send demo notification")
+      }
+    } catch (error) {
+      console.error("Error sending demo notification:", error)
+      toast({
+        title: "Error",
+        description: "Failed to send demo notification",
+        variant: "destructive",
+      })
+    }
+  }
+
+  if (!isConnected) {
+    return (
+      <div className="max-w-2xl mx-auto space-y-8">
+        <h1 className="text-3xl font-bold">Settings</h1>
+        <Card className="bg-gray-900 border-gray-800">
+          <CardContent className="p-6">
+            <div className="text-center py-8">
+              <h2 className="text-xl font-semibold text-white mb-2">Connect Your Wallet</h2>
+              <p className="text-gray-400">Please connect your wallet to access and save your settings.</p>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    )
+  }
+
+  if (loading) {
+    return (
+      <div className="max-w-2xl mx-auto space-y-8">
+        <h1 className="text-3xl font-bold">Settings</h1>
+        <Card className="bg-gray-900 border-gray-800">
+          <CardContent className="p-6">
+            <div className="text-center py-8">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-500 mx-auto mb-4"></div>
+              <p className="text-gray-400">Loading settings...</p>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    )
   }
 
   return (
     <div className="max-w-2xl mx-auto space-y-8">
-      <h1 className="text-3xl font-bold">Settings</h1>
+      <div className="flex items-center justify-between">
+        <h1 className="text-3xl font-bold">Settings</h1>
+        {saving && (
+          <div className="flex items-center space-x-2 text-green-500">
+            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-green-500"></div>
+            <span className="text-sm">Saving...</span>
+          </div>
+        )}
+      </div>
 
       <Card className="bg-gray-900 border-gray-800">
         <CardContent className="p-6 space-y-8">
@@ -168,11 +352,22 @@ export default function SettingsForm() {
 
           {/* Event Types */}
           <div className="space-y-4">
-            <div>
-              <h2 className="text-xl text-white font-semibold mb-2">Event Types</h2>
-              <p className="text-gray-400 text-sm">
-                Turn on/off events to receive through the selected notification methods.
-              </p>
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-xl text-white font-semibold mb-2">Event Types</h2>
+                <p className="text-gray-400 text-sm">
+                  Turn on/off events to receive through the selected notification methods.
+                </p>
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => sendDemoNotification("item_sold")}
+                className="text-xs border-green-500 text-green-500 hover:bg-green-500 hover:text-black"
+              >
+                <Bell className="w-3 h-3 mr-1" />
+                Test Notification
+              </Button>
             </div>
 
             <div className="space-y-4">

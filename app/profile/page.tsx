@@ -3,6 +3,7 @@ import { useEffect, useState } from "react"
 import ProfileHero from "@/components/profile/profile-hero"
 import ProfileContent from "@/components/profile/profile-content"
 import NewsletterSection from "@/components/marketplace/newsletter-section"
+import Footer from "@/components/layout/footer"
 import { useWallet } from "@/hooks/use-wallet"
 import { useSearchParams } from "next/navigation";
 
@@ -11,7 +12,7 @@ const getProfileData = (address: string) => {
   return {
     address: address,
     username: "Chihiro",
-    bio: "Chihiro - the one of first #EUMOBA #NFTgames, where you can enjoy this freely gameplay as well as earning money system.",
+    bio: "Chihiro - the one of first #EUMOBA #LIDgames, where you can enjoy this freely gameplay as well as earning money system.",
     bannerImage: "/placeholder.svg?height=300&width=1200",
     avatarImage: "/placeholder.svg?height=120&width=120",
     socialLinks: {
@@ -92,10 +93,11 @@ export default function ProfilePage() {
 
   return (
     <div>
-      <ProfileHero profile={displayProfile} />
+      <ProfileHero profile={displayProfile} isPublic={false} />
       <div className="container mx-auto px-4">
-        <ProfileContent profile={displayProfile} defaultTab={tab} />
+        <ProfileContent profile={displayProfile} defaultTab={tab} isPublic={false} />
       </div>
+      <Footer />
     </div>
   );
 }

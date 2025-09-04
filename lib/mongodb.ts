@@ -21,4 +21,10 @@ if (process.env.NODE_ENV === "development") {
   clientPromise = client.connect();
 }
 
-export default clientPromise; 
+export default clientPromise;
+
+export async function connectToDatabase() {
+  const client = await clientPromise;
+  const db = client.db("hunosmarket");
+  return { client, db };
+} 

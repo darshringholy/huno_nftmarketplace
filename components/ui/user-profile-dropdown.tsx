@@ -7,6 +7,8 @@ import { useWallet } from "@/hooks/use-wallet"
 import { useState, useEffect } from "react"
 import Link from "next/link"
 import { ethers } from "ethers"
+import HexagonAvatar from "@/components/ui/hexagon-avatar"
+import { fetchUserAvatar } from "@/lib/user-avatars"
 
 const PUSD_TOKEN_ADDRESS = "0x1E0E030AbCb4f07de629DCCEa458a271e0E82624";
 const ERC20_ABI = [
@@ -18,12 +20,13 @@ export default function UserProfileDropdown() {
   const { address, chainId, formatAddress, disconnectWallet } = useWallet()
   const [copied, setCopied] = useState(false)
   const [pusdBalance, setPusdBalance] = useState<string>("0")
+  const [userAvatar, setUserAvatar] = useState<string | undefined>()
 
   useEffect(() => {
     async function fetchPusdBalance() {
       if (!address || !window.ethereum) return;
       try {
-        const provider = new ethers.BrowserProvider(window.ethereum);
+        const provider = new ethers.BrowserProvider(window.ethereum as any);
         const contract = new ethers.Contract(PUSD_TOKEN_ADDRESS, ERC20_ABI, provider);
         const [rawBalance, decimals] = await Promise.all([
           contract.balanceOf(address),
@@ -36,6 +39,24 @@ export default function UserProfileDropdown() {
     }
     fetchPusdBalance();
   }, [address, chainId]);
+
+  // Fetch user avatar
+  useEffect(() => {
+    const fetchAvatar = async () => {
+      if (address) {
+        try {
+          const userData = await fetchUserAvatar(address)
+          if (userData?.avatar) {
+            setUserAvatar(userData.avatar)
+          }
+        } catch (error) {
+          console.error("Error fetching user avatar:", error)
+        }
+      }
+    }
+
+    fetchAvatar()
+  }, [address])
 
   const copyAddress = async () => {
     if (address) {
@@ -50,9 +71,10 @@ export default function UserProfileDropdown() {
       <div className="p-4 space-y-4">
         {/* User Address Section */}
         <div className="flex items-center space-x-3">
-          <div className="w-10 h-10 bg-gray-700 rounded-full flex items-center justify-center">
-            <User className="w-5 h-5 text-gray-400" />
-          </div>
+          <HexagonAvatar 
+            src={userAvatar}
+            size="md"
+          />
           <div className="flex-1">
             <p className="text-white font-medium">{formatAddress}</p>
             <Link href="/profile" className="text-green-400 text-sm hover:text-green-300">
@@ -70,7 +92,10 @@ export default function UserProfileDropdown() {
             </div>
             <span className="text-white font-semibold">{pusdBalance} PUSD</span>
           </div>
-          <Button className="w-full bg-green-500 hover:bg-green-600 text-black font-medium">
+          <Button 
+            className="w-full bg-green-500 hover:bg-green-600 text-black font-medium"
+            onClick={() => window.open('https://www.onramper.com/', '_blank')}
+          >
             <CreditCard className="w-4 h-4 mr-2" />
             Add funds with card
           </Button>

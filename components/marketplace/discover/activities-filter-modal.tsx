@@ -51,7 +51,7 @@ export default function ActivitiesFilterModal({ open, onOpenChange }: Activities
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="bg-gray-900 border-gray-800 text-white max-w-md">
+              <DialogContent className="border-gray-800 text-white max-w-md" style={{ backgroundColor: "#080A0C" }}>
         <DialogHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
           <DialogTitle className="text-lg font-semibold">Filters</DialogTitle>
         </DialogHeader>

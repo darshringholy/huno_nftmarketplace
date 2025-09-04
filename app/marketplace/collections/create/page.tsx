@@ -9,6 +9,7 @@ const initialForm = {
   name: "",
   website: "",
   description: "",
+  contractAddress: "",
   royalty: "",
   royaltyWallet: "",
   blockchain: "Plume",
@@ -86,6 +87,7 @@ export default function CreateCollectionPage() {
         name: form.name,
         website: form.website,
         description: form.description,
+        contractAddress: form.contractAddress,
         royalty: form.royalty,
         royaltyWallet: form.royaltyWallet,
         blockchain: form.blockchain,
@@ -105,7 +107,7 @@ export default function CreateCollectionPage() {
       });
       const json = await res.json();
       if (!res.ok) throw new Error(json.error || "Failed to create collection");
-      setSuccess("Collection created successfully!");
+      setSuccess("Collection submitted successfully! It's now pending admin approval and will be visible once approved.");
       setForm(initialForm);
       setLogoPreview(null);
       setBannerPreview(null);
@@ -116,7 +118,7 @@ export default function CreateCollectionPage() {
       // Redirect to profile collections tab
       setTimeout(() => {
         router.push("/profile?tab=collections");
-      }, 1000);
+      }, 3000);
     } catch (err: any) {
       setError(err.message || "Something went wrong");
     } finally {
@@ -244,13 +246,22 @@ export default function CreateCollectionPage() {
               <label className="block text-gray-300 mb-1">Website</label>
               <input className="w-full bg-gray-900 border border-gray-700 rounded px-4 py-2 text-white" value={form.website} onChange={e => handleInputChange("website", e.target.value)} />
             </div>
-            <div className="md:col-span-2">
+            <div>
               <label className="block text-gray-300 mb-1">Description</label>
               <textarea className="w-full bg-gray-900 border border-gray-700 rounded px-4 py-2 text-white min-h-[80px]" value={form.description} onChange={e => handleInputChange("description", e.target.value)} />
             </div>
             <div>
+              <label className="block text-gray-300 mb-1">Contract Address of it's LID<span className="text-red-500">*</span></label>
+              <input className="w-full bg-gray-900 border border-gray-700 rounded px-4 py-2 text-white" required value={form.contractAddress} onChange={e => handleInputChange("contractAddress", e.target.value)} placeholder="Enter the contract address" />
+            </div>
+            <div>
               <label className="block text-gray-300 mb-1">Type your desired Royalty fee rate below (Max 3%)</label>
-              <input className="w-full bg-gray-900 border border-gray-700 rounded px-4 py-2 text-white" value={form.royalty} onChange={e => handleInputChange("royalty", e.target.value)} />
+              <select className="w-full bg-gray-900 border border-gray-700 rounded px-4 py-2 text-white" value={form.royalty} onChange={e => handleInputChange("royalty", e.target.value)}>
+                <option value="0">0%</option>
+                <option value="1">1%</option>
+                <option value="2">2%</option>
+                <option value="3">3%</option>
+              </select>
             </div>
             <div>
               <label className="block text-gray-300 mb-1">Wallet address to receive the Royalty fee</label>
@@ -259,9 +270,7 @@ export default function CreateCollectionPage() {
             <div>
               <label className="block text-gray-300 mb-1">Which Blockchain is Your Project on?</label>
               <select className="w-full bg-gray-900 border border-gray-700 rounded px-4 py-2 text-white" value={form.blockchain} onChange={e => handleInputChange("blockchain", e.target.value)}>
-                <option>Plume</option>
-                <option>Ethereum</option>
-                <option>Polygon</option>
+                <option value="plume">Plume</option>
               </select>
             </div>
             <div>

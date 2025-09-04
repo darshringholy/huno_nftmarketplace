@@ -13,12 +13,15 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 import ClientLayout from "./ClientLayout";
 
+// Import startup script to start event listener
+import "@/lib/startup";
+
 const inter = Inter({ subsets: ["latin"] });
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="en">
-      <body className={`${inter.className} min-h-screen bg-black text-white`}>
+      <body className={`${inter.className} min-h-screen text-white`}>
         <ClientLayout>{children}</ClientLayout>
       </body>
     </html>

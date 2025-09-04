@@ -1,10 +1,10 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Filter, ChevronDown, Check } from "lucide-react"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
-import NftCard from "@/components/ui/nft-card"
+import { NftCardDiscover } from "@/components/ui/nft-card-discover"
 
 const sortOptions = [
   { value: "newest", label: "Newest" },
@@ -13,26 +13,81 @@ const sortOptions = [
   { value: "rarity", label: "Rarity" },
 ]
 
-const collectionItems = [
-  { name: "Red car", price: "1.75 BUSD", timeLeft: "01:20:15", image: "/placeholder.svg?height=200&width=200" },
-  { name: "Anpaid", price: "1.75 BUSD", timeLeft: "01:20:15", image: "/placeholder.svg?height=200&width=200" },
-  { name: "Marvin", price: "1.75 BUSD", timeLeft: "01:20:15", image: "/placeholder.svg?height=200&width=200" },
-  { name: "Kalyptingo", price: "1.75 BUSD", timeLeft: "01:20:15", image: "/placeholder.svg?height=200&width=200" },
-  { name: "Red car", price: "1.75 BUSD", timeLeft: "01:20:15", image: "/placeholder.svg?height=200&width=200" },
-  { name: "Anpaid", price: "1.75 BUSD", timeLeft: "01:20:15", image: "/placeholder.svg?height=200&width=200" },
-  { name: "Marvin", price: "1.75 BUSD", timeLeft: "01:20:15", image: "/placeholder.svg?height=200&width=200" },
-  { name: "Kalyptingo", price: "1.75 BUSD", timeLeft: "01:20:15", image: "/placeholder.svg?height=200&width=200" },
-  { name: "Red car", price: "1.75 BUSD", timeLeft: "01:20:15", image: "/placeholder.svg?height=200&width=200" },
-  { name: "Anpaid", price: "1.75 BUSD", timeLeft: "01:20:15", image: "/placeholder.svg?height=200&width=200" },
-  { name: "Marvin", price: "1.75 BUSD", timeLeft: "01:20:15", image: "/placeholder.svg?height=200&width=200" },
-  { name: "Kalyptingo", price: "1.75 BUSD", timeLeft: "01:20:15", image: "/placeholder.svg?height=200&width=200" },
-]
+interface CollectionContentProps {
+  collectionId: string
+}
 
-export default function CollectionContent() {
+export default function CollectionContent({ collectionId }: CollectionContentProps) {
   const [activeTab, setActiveTab] = useState("items")
   const [sortBy, setSortBy] = useState("newest")
+  const [items, setItems] = useState<any[]>([])
+  const [loading, setLoading] = useState(false)
+  const [page, setPage] = useState(1)
+  const [hasMore, setHasMore] = useState(true)
+  const [collectionName, setCollectionName] = useState<string>("")
 
   const selectedOption = sortOptions.find((option) => option.value === sortBy)
+
+  // Fetch collection name
+  const fetchCollectionName = async () => {
+    try {
+      const response = await fetch(`/api/collections?id=${collectionId}`);
+      if (response.ok) {
+        const data = await response.json();
+        if (data.collection && data.collection.name) {
+          setCollectionName(data.collection.name);
+        }
+      }
+    } catch (error) {
+      console.error("Error fetching collection name:", error);
+    }
+  };
+
+  const fetchItems = async (pageNum: number, sort: string, reset: boolean = false) => {
+    if (loading) return;
+    
+    setLoading(true);
+    try {
+      const response = await fetch(`/api/collections/${collectionId}/items?page=${pageNum}&limit=20&sortBy=${sort}`);
+      if (response.ok) {
+        const data = await response.json();
+        if (reset) {
+          setItems(data.items);
+        } else {
+          setItems(prev => [...prev, ...data.items]);
+        }
+        setHasMore(data.pagination.hasMore);
+      }
+    } catch (error) {
+      console.error("Error fetching items:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (collectionId) {
+      setPage(1);
+      setItems([]);
+      fetchCollectionName();
+      fetchItems(1, sortBy, true);
+    }
+  }, [collectionId, sortBy]);
+
+  const handleLoadMore = () => {
+    if (!loading && hasMore) {
+      const nextPage = page + 1;
+      setPage(nextPage);
+      fetchItems(nextPage, sortBy);
+    }
+  };
+
+  const handleSortChange = (newSort: string) => {
+    setSortBy(newSort);
+    setPage(1);
+    setItems([]);
+    fetchItems(1, newSort, true);
+  };
 
   return (
     <div className="py-8 space-y-8">
@@ -74,7 +129,7 @@ export default function CollectionContent() {
               {sortOptions.map((option) => (
                 <DropdownMenuItem
                   key={option.value}
-                  onClick={() => setSortBy(option.value)}
+                  onClick={() => handleSortChange(option.value)}
                   className="hover:bg-gray-700 focus:bg-gray-700 cursor-pointer flex items-center justify-between"
                 >
                   <span className={sortBy === option.value ? "text-green-400" : "text-white"}>{option.label}</span>
@@ -93,11 +148,40 @@ export default function CollectionContent() {
 
       {/* Items Grid */}
       {activeTab === "items" && (
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-          {collectionItems.map((item, index) => (
-            <NftCard key={index} nft={item} index={index} />
-          ))}
-        </div>
+        <>
+          {loading && items.length === 0 ? (
+            <div className="text-center py-16">
+              <div className="text-gray-400">Loading items...</div>
+            </div>
+          ) : items.length > 0 ? (
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+              {items.map((item, index) => {
+                console.log("Item data:", item); // Debug log
+                return (
+                  <NftCardDiscover 
+                    key={item.id || index} 
+                    nft={{
+                      name: item.name,
+                      image: item.image,
+                      collectionName: collectionName || "Unknown Collection",
+                      verified: true,
+                      price: item.saleData?.price || item.price || "-",
+                      isPriceLoading: false,
+                      liquidId: item.id?.toString() || "",
+                      saleType: item.saleData?.saleType,
+                      endTime: item.saleData?.endTime ? Math.floor(new Date(item.saleData.endTime).getTime() / 1000) : undefined
+                    }} 
+                    index={index} 
+                  />
+                );
+              })}
+            </div>
+          ) : (
+            <div className="text-center py-16">
+              <div className="text-gray-400">No items found in this collection.</div>
+            </div>
+          )}
+        </>
       )}
 
       {/* Activities Tab Content */}
@@ -108,11 +192,18 @@ export default function CollectionContent() {
       )}
 
       {/* Load More Button */}
-      <div className="text-center">
-        <Button variant="outline" className="border-gray-700 hover:border-green-500">
-          Load more
-        </Button>
-      </div>
+      {activeTab === "items" && hasMore && (
+        <div className="text-center">
+          <Button 
+            variant="outline" 
+            className="border-gray-700 hover:border-green-500"
+            onClick={handleLoadMore}
+            disabled={loading}
+          >
+            {loading ? "Loading..." : "Load more"}
+          </Button>
+        </div>
+      )}
     </div>
   )
 }

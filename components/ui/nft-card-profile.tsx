@@ -1,5 +1,6 @@
 import { Card, CardContent } from "./card"
 import { Check } from "lucide-react"
+import Link from "next/link"
 
 interface NftCardProfileProps {
     nft: {
@@ -7,12 +8,13 @@ interface NftCardProfileProps {
         image: string
         collectionName?: string
         verified?: boolean
+        liquidId?: string
     }
     index?: number
 }
 
 export function NftCardProfile({ nft, index }: NftCardProfileProps) {
-    return (
+    const cardContent = (
         <Card
             className="bg-[#232423] border-none rounded-lg overflow-hidden shadow-none flex flex-col h-full"
             key={index}
@@ -50,5 +52,9 @@ export function NftCardProfile({ nft, index }: NftCardProfileProps) {
                 </div>
             </CardContent>
         </Card>
-    )
+    );
+    // If liquidId is present, wrap in a link
+    return nft.liquidId ? (
+        <Link href={`/marketplace/items/${nft.liquidId}`}>{cardContent}</Link>
+    ) : cardContent;
 } 

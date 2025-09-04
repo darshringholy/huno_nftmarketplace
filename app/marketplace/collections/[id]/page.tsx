@@ -8,6 +8,7 @@ import { useParams } from "next/navigation";
 export default function CollectionDetailsPage() {
   const { id } = useParams();
   const [collection, setCollection] = useState<any>(null);
+  const [stats, setStats] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -15,27 +16,42 @@ export default function CollectionDetailsPage() {
     if (!id) return;
     setLoading(true);
     setError(null);
-    fetch(`/api/collections?id=${id}`)
-      .then(async (res) => {
-        if (!res.ok) throw new Error("Collection not found");
-        const { collection } = await res.json();
+
+    const fetchData = async () => {
+      try {
+        // Fetch collection data
+        const collectionRes = await fetch(`/api/collections?id=${id}`);
+        if (!collectionRes.ok) throw new Error("Collection not found");
+        const { collection } = await collectionRes.json();
         setCollection(collection);
-      })
-      .catch((err) => setError(err.message))
-      .finally(() => setLoading(false));
+
+        // Fetch collection stats
+        const statsRes = await fetch(`/api/collections/${id}/stats`);
+        if (statsRes.ok) {
+          const { stats } = await statsRes.json();
+          setStats(stats);
+        } else {
+          // Fallback to default stats if API fails
+          setStats({
+            traded: "0",
+            players: "0",
+            listed: "0",
+            floorPrice: "0",
+          });
+        }
+      } catch (err: any) {
+        setError(err.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
   }, [id]);
 
   if (loading) return <div className="py-12 text-center text-gray-400">Loading collection...</div>;
   if (error) return <div className="py-12 text-center text-red-500">{error}</div>;
   if (!collection) return <div className="py-12 text-center text-gray-400">Collection not found.</div>;
-
-  // Dummy stats for now
-  const stats = {
-    traded: "0",
-    players: "0",
-    listed: "0",
-    floorPrice: "0",
-  };
 
   return (
     <div className="min-h-screen bg-black">
@@ -50,11 +66,16 @@ export default function CollectionDetailsPage() {
       <div className="container mx-auto px-4 -mt-24">
         <div className="flex flex-col items-center">
           <div className="w-full flex flex-col items-center mt-8">
-            <CollectionStats stats={stats} />
+            <CollectionStats stats={stats || {
+              traded: "0",
+              players: "0",
+              listed: "0",
+              floorPrice: "0",
+            }} />
           </div>
         </div>
         <div className="mt-12">
-          <CollectionContent />
+          <CollectionContent collectionId={id as string} />
         </div>
       </div>
     </div>

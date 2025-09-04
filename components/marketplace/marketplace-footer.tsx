@@ -14,17 +14,17 @@ export default function MarketplaceFooter() {
             <p className="text-gray-400 text-sm leading-relaxed">Join Hunos community</p>
             <div className="flex items-center justify-center md:justify-start space-x-4 mt-2">
               <a
-                href="https://twitter.com/"
+                href="https://x.com/hunosnetwork"
                 target="_blank"
                 rel="noopener noreferrer"
-                aria-label="Twitter"
+                aria-label="X (Twitter)"
                 className="text-gray-400 hover:text-white transition-colors"
               >
                 {/* X (Twitter) icon */}
-                <Image src="/images/twitter.svg" alt="Telegram" width={24} height={24} className="w-6 h-6" />
+                <Image src="/images/twitter.svg" alt="X (Twitter)" width={24} height={24} className="w-6 h-6" />
               </a>
               <a
-                href="https://t.me/"
+                href="https://t.me/hunosnetwork"
                 target="_blank"
                 rel="noopener noreferrer"
                 aria-label="Telegram"
@@ -34,14 +34,14 @@ export default function MarketplaceFooter() {
                 <Image src="/images/telegram.svg" alt="Telegram" width={24} height={24} className="w-6 h-6" />
               </a>
               <a
-                href="https://youtube.com/"
+                href="https://www.youtube.com/@Hunosnetwork"
                 target="_blank"
                 rel="noopener noreferrer"
                 aria-label="YouTube"
                 className="text-gray-400 hover:text-white transition-colors"
               >
                 {/* YouTube icon */}
-                <Image src="/images/youtube.svg" alt="Telegram" width={24} height={24} className="w-6 h-6" />
+                <Image src="/images/youtube.svg" alt="YouTube" width={24} height={24} className="w-6 h-6" />
               </a>
             </div>
           </div>

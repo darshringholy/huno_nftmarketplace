@@ -334,7 +334,7 @@ export default function ProfileEditForm() {
 
               <div className="space-y-4">
                 <p className="text-sm text-gray-400">
-                  You can choose a NFT from <span className="text-green-400 font-semibold">My NFTs</span> as your
+                  You can choose a LID from <span className="text-green-400 font-semibold">My LIDs</span> as your
                   avatar, and your user name will be <span className="text-green-400 font-semibold">Rainbowized</span>{" "}
                   when used.
                 </p>

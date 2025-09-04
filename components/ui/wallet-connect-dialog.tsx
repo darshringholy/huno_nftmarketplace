@@ -66,7 +66,7 @@ export default function WalletConnectDialog({ open, onOpenChange, onWalletSelect
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="bg-gray-900 border-gray-800 text-white max-w-md p-0">
+              <DialogContent className="border-gray-800 text-white max-w-md p-0" style={{ backgroundColor: "#080A0C" }}>
         <DialogHeader className="p-6 pb-4">
           <DialogTitle className="text-xl font-semibold">Connect Wallet</DialogTitle>
         </DialogHeader>

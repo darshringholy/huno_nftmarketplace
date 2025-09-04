@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button"
 import { Copy, ExternalLink, LogOut } from "lucide-react"
 import { useWallet } from "@/hooks/use-wallet"
 import { useState } from "react"
+import { CONFIG } from "@/lib/config"
 
 export default function WalletInfo() {
   const { address, balance, chainId, formatAddress, disconnectWallet } = useWallet()
@@ -18,31 +19,13 @@ export default function WalletInfo() {
   }
 
   const getExplorerUrl = () => {
-    switch (chainId) {
-      case 1:
-        return `https://etherscan.io/address/${address}`
-      case 137:
-        return `https://polygonscan.com/address/${address}`
-      case 42161:
-        return `https://arbiscan.io/address/${address}`
-      default:
-        return `https://etherscan.io/address/${address}`
-    }
+    // Only support Plume testnet
+    return `${CONFIG.EXPLORER_URL}/address/${address}`
   }
 
   const getNetworkName = () => {
-    switch (chainId) {
-      case 1:
-        return "Ethereum"
-      case 137:
-        return "Polygon"
-      case 42161:
-        return "Arbitrum"
-      case 98865:
-        return "Plume"
-      default:
-        return "Unknown"
-    }
+    // Only support Plume testnet
+    return CONFIG.CHAIN_NAME
   }
 
   return (

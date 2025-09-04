@@ -3,8 +3,9 @@ import Image from "next/image"
 
 export default function Footer() {
   return (
-    <footer className="bg-black border-t border-gray-800 py-12 md:py-16 px-4">
-      <div className="container mx-auto">
+    <footer className="p-8">
+      <div className="mx-2 w-full">
+        <div className="rounded-2xl p-8 md:p-12" style={{ backgroundColor: "#212121" }}>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-8 md:mb-12">
           {/* Logo and Tagline */}
           <div className="space-y-4 text-center md:text-left flex flex-col justify-center">
@@ -27,9 +28,6 @@ export default function Footer() {
               <Link href="/features" className="block text-gray-400 hover:text-white transition-colors text-sm">
                 Features
               </Link>
-              <Link href="/roadmap" className="block text-gray-400 hover:text-white transition-colors text-sm">
-                Roadmap
-              </Link>
               <Link href="/contact" className="block text-gray-400 hover:text-white transition-colors text-sm">
                 Contact
               </Link>
@@ -40,9 +38,9 @@ export default function Footer() {
           <div className="text-center md:text-left">
             <h3 className="font-semibold mb-4">Social network</h3>
             <div className="space-y-2">
-              <a href="#" className="block text-gray-400 hover:text-white transition-colors text-sm">X</a>
-              <a href="#" className="block text-gray-400 hover:text-white transition-colors text-sm">Telegram</a>
-              <a href="#" className="block text-gray-400 hover:text-white transition-colors text-sm">LinkedIn</a>
+              <a href="https://x.com/hunosnetwork" target="_blank" rel="noopener noreferrer" className="block text-gray-400 hover:text-white transition-colors text-sm">X</a>
+              <a href="https://t.me/hunosnetwork" target="_blank" rel="noopener noreferrer" className="block text-gray-400 hover:text-white transition-colors text-sm">Telegram</a>
+              <a href="https://www.linkedin.com/company/hunos" target="_blank" rel="noopener noreferrer" className="block text-gray-400 hover:text-white transition-colors text-sm">LinkedIn</a>
             </div>
           </div>
 
@@ -70,6 +68,7 @@ export default function Footer() {
 
         <div className="border-t border-gray-800 pt-8">
           <p className="text-center text-gray-400 text-sm">© 2025 Hunos. All rights reserved.</p>
+        </div>
         </div>
       </div>
     </footer>

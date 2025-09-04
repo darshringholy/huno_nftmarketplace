@@ -4,6 +4,7 @@
 
 body {
   font-family: Fractul, sans-serif;
+  background-color: #090909;
 }
 
 @layer utilities {

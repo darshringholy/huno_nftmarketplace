@@ -29,9 +29,10 @@ interface Profile {
 
 interface ProfileHeroProps {
   profile: Profile
+  isPublic?: boolean
 }
 
-export default function ProfileHero({ profile }: ProfileHeroProps) {
+export default function ProfileHero({ profile, isPublic = false }: ProfileHeroProps) {
   const [copied, setCopied] = useState(false)
 
   const handleCopyAddress = async () => {
@@ -155,13 +156,15 @@ export default function ProfileHero({ profile }: ProfileHeroProps) {
               size="sm"
               className="border-gray-700"
             />
-            <EditButton
-              onProfileEdit={handleProfileEdit}
-              onSettingsEdit={handleSettingsEdit}
-              variant="outline"
-              size="sm"
-              className="border-gray-700"
-            />
+            {!isPublic && (
+              <EditButton
+                onProfileEdit={handleProfileEdit}
+                onSettingsEdit={handleSettingsEdit}
+                variant="outline"
+                size="sm"
+                className="border-gray-700"
+              />
+            )}
 
           </div>
         </div>
